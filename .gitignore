@@ -2,3 +2,5 @@
 *.swp
 *.swo
 venv/
+todo.txt
+test.py
