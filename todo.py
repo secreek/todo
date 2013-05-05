@@ -3,7 +3,7 @@
 
 __version__ = '0.1.1'
 
-
+import os
 from ply import lex
 from ply import yacc
 
@@ -11,15 +11,16 @@ from ply import yacc
 class Task(object):
     """
     Task object.
-    One task looks like:
+    One task looks like
 
       1. (x) Go shopping
 
     if not done,  leave there blank.
 
-    id          int     task's id
-    content     str     task'content
-    done        bool    is this task done?
+    Attributes
+      id          int     task's id
+      content     str     task'content
+      done        bool    is this task done?
     """
     def __init__(self, id, content, done=False):
         self.id = id
@@ -82,8 +83,8 @@ class TodoParser(object):
     """
     Parser for Todo format string, works with a todo lexer.
 
-    Parse string to Python list:
-      todo_str = "#1 Watch TV! (done)"
+    Parse string to Python list
+      todo_str = "1. (x) Write email to tom"
       TodoParser().parse(todo_str)
     """
 
@@ -112,7 +113,7 @@ class TodoParser(object):
     def p_translation_task(self, p):
         """
         translate_task : ID DONE TASK
-                              | ID TASK
+                       | ID TASK
         """
         if len(p) == 4:
             done = True
@@ -172,13 +173,16 @@ lexer = TodoLexer()  # build lexer
 parser = TodoParser()  # build parser
 generator = TodoGenerator()  # build generator
 
-lst = parser.parse(open("todo.txt").read())
 
-for i in lst:
+class TodoApp(object):
+    """
+    Todo app
+    """
 
-    if isinstance(i, Task):
-        print i.id, i.content, i.done
-
-print generator.generate(lst)
-
-print lexer.test(open("todo.txt").read())
+    def __init__(self):
+        #TODO: read file and parse to list
+        if os.path.exists("todo.txt"):
+            f = open("todo.txt", "w")
+        else:
+            f = open("~/todo.txt", "w")
+        self.tasks = parser.parse(f.read())
