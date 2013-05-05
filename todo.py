@@ -7,11 +7,12 @@ __version__ = '0.1.1'
 import re
 
 
-class TodoSyntaxError(SyntaxError):
-    pass
-
 done = True
 undone = False
+
+
+class TodoSyntaxError(SyntaxError):
+    pass
 
 
 class Task(object):
@@ -75,8 +76,7 @@ class Parser(object):  # Parser for todo format string
 
         for line_no, line in enumerate(lines):
             if not line and line.isspace():
-                # skip empty line
-                continue
+                continue  # skip empty line
             else:
                 try:
                     dct = self.parse(line)
