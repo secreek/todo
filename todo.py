@@ -49,6 +49,14 @@ class Tag(object):
 
 
 class TodoLexer(object):
+    """
+    Lexer for Todo format string.
+    Tokens
+      ID        e.g. '#1'
+      TAG       e.g. '---- SampleTag ----'
+      STATUS    e.g. '(done)', '(undone)'
+      TASK      e.g. 'This is a task'
+    """
 
     tokens = (
         "ID",
@@ -91,24 +99,22 @@ class TodoLexer(object):
     def __init__(self):
         self.lexer = lex.lex(module=self)
 
-    def test(self, data):
-        self.lexer.input(data)
-        while True:
-            tok = self.lexer.token()
-            if not tok:
-                break
-            print tok
-
 
 class TodoParser(object):
+    """
+    Parser for Todo format string, works with a todo lexer.
+
+    Parse string to Python list:
+      todo_str = "#1 Watch TV! (done)"
+      TodoParser().parse(todo_str)
+    """
 
     tokens = TodoLexer.tokens
 
     def p_error(self, p):
         if p:
             raise SyntaxError(
-                "Character '%s' at line %d, \
-                token: %r" % (p.value[0], p.lineno, p)
+                "Character '%s' at line %d" % (p.value[0], p.lineno)
             )
         else:
             raise SyntaxError("SyntaxError at EOF")
@@ -153,6 +159,50 @@ class TodoParser(object):
         return self.parser.parse(data)
 
 
+class TodoGenerator(object):
+    """
+    Generator from python list to string.
+    """
+
+    g_newline = "\n"
+
+    def g_id(self, v):
+        return "#" + str(v)
+
+    def g_status(self, v):
+        if v is True:
+            return '(done)'
+        else:
+            return '(undone)'
+
+    def g_task(self, v):
+        return v
+
+    def g_tag(self, v):
+        return '---- ' + v + ' ----'
+
+    def gen_tag(self, tag):
+        return self.g_tag(tag.name)
+
+    def gen_task(self, task):
+        lst = []
+        lst.append(self.g_id(task.id))
+        lst.append(self.g_task(task.content))
+        lst.append(self.g_status(task.status))
+        return " ".join(lst)
+
+    def generate(self, lst):
+        re = []
+        for i in lst:
+            if isinstance(i, Tag):
+                re.append(self.gen_tag(i))
+            elif isinstance(i, Task):
+                re.append(self.gen_task(i))
+            else:
+                raise SyntaxError('Not support '+  i)
+        return self.g_newline.join(re)
+
+
 lexer = TodoLexer()
 parser = TodoParser()
 lst = parser.parse(open("todo.txt").read())
@@ -161,3 +211,5 @@ for x in lst:
         print x.id, x.content, x.done
     else:
         print x
+
+print TodoGenerator().generate(lst)
