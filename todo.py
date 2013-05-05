@@ -15,8 +15,6 @@ class Task(object):
 
       1. Go shopping (x)
 
-    The '1.' is id, 'Go shopping' is the content and the '(x)' is the done attribute.
-
     if not done,  leave there blank.
 
     id          int     task's id
@@ -79,7 +77,7 @@ class TodoLexer(object):
         return t
 
     def t_TASK(self, t):
-        r'(.(?!\(x\)))*\S'
+        r'((?!\(x\))).+'
         return t
 
     def t_newline(self, t):
@@ -93,6 +91,14 @@ class TodoLexer(object):
 
     def __init__(self):
         self.lexer = lex.lex(module=self)
+
+    def test(self, data):
+        self.lexer.input(data)
+        while True:
+            tok = self.lexer.token()
+            if not tok:
+                break
+            print tok
 
 
 class TodoParser(object):
@@ -128,15 +134,16 @@ class TodoParser(object):
 
     def p_translation_task(self, p):
         """
-        translate_single_line : ID TASK DONE
+        translate_single_line : ID DONE TASK
                               | ID TASK
         """
         if len(p) == 4:
             done = True
-        else:
+            content = p[3]
+        elif len(p) == 3:
             done = False
-
-        task = Task(p[1], p[2], done)
+            content = p[2]
+        task = Task(p[1], content, done)
         self.lst.append(task)
 
     def p_translation_tag(self, p):
@@ -169,7 +176,7 @@ class TodoGenerator(object):
         if v is True:
             return '(x)'
         else:
-            return ''
+            return '   '
 
     def g_task(self, v):
         return v
@@ -183,8 +190,8 @@ class TodoGenerator(object):
     def gen_task(self, task):
         lst = []
         lst.append(self.g_id(task.id))
-        lst.append(self.g_task(task.content))
         lst.append(self.g_done(task.done))
+        lst.append(self.g_task(task.content))
         return " ".join(lst)
 
     def generate(self, lst):
@@ -195,21 +202,10 @@ class TodoGenerator(object):
             elif isinstance(i, Task):
                 re.append(self.gen_task(i))
             else:
-                raise SyntaxError('Not support type: '+  type(i))
+                raise SyntaxError('Not support type: ' + type(i))
         return self.g_newline.join(re)
 
 
 lexer = TodoLexer()  # build lexer
 parser = TodoParser()  # build parser
 generator = TodoGenerator()  # build generator
-
-lst = parser.parse(open("todo.txt").read())
-
-for i in lst:
-
-    if isinstance(i, Task):
-        print i.id, i.done, i.content
-    else:
-        print i.name
-
-print generator.generate(lst)
