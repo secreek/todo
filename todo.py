@@ -13,24 +13,20 @@ class Task(object):
     Task object.
     One task looks like:
 
-      1. Go shopping (done)
+      1. Go shopping (x)
 
-    The '1.' is id, 'Go shopping' is the content and the '(done)' is the status
-    And the status is optional(default: undone).
+    The '1.' is id, 'Go shopping' is the content and the '(x)' is the done attribute.
+
+    if not done,  leave there blank.
 
     id          int     task's id
     content     str     task'content
-    status      bool    is this task done?
+    done        bool    is this task done?
     """
-    def __init__(self, id, content, status=False):
+    def __init__(self, id, content, done=False):
         self.id = id
         self.content = content
-        self.status = status
-
-    @property
-    def done(self):
-        # return True if this task has been done.
-        return self.status
+        self.done = done
 
 
 class Tag(object):
@@ -54,14 +50,14 @@ class TodoLexer(object):
     Tokens
       ID        e.g. '1.'
       TAG       e.g. '---- SampleTag ----'
-      STATUS    e.g. '(done)', '(undone)'
+      DONE      e.g. '(x)'
       TASK      e.g. 'This is a task'
     """
 
     tokens = (
         "ID",
         "TAG",
-        "STATUS",
+        "DONE",
         "TASK",
     )
 
@@ -78,13 +74,12 @@ class TodoLexer(object):
         t.value = t.value.strip()
         return t
 
-    def t_STATUS(self, t):
-        r'(\(done\))|(\(undone\))'
-        t.value = (t.value == "(done)")
+    def t_DONE(self, t):
+        r'(\(x\))'
         return t
 
     def t_TASK(self, t):
-        r'(.(?!\(done\))(?!\(undone\)))*\S'
+        r'(.(?!\(x\)))*\S'
         return t
 
     def t_newline(self, t):
@@ -133,14 +128,15 @@ class TodoParser(object):
 
     def p_translation_task(self, p):
         """
-        translate_single_line : ID TASK STATUS
+        translate_single_line : ID TASK DONE
                               | ID TASK
         """
-        if len(p) < 4:
-            status = False
+        if len(p) == 4:
+            done = True
         else:
-            status = p[3]
-        task = Task(p[1], p[2], status)
+            done = False
+
+        task = Task(p[1], p[2], done)
         self.lst.append(task)
 
     def p_translation_tag(self, p):
@@ -169,11 +165,11 @@ class TodoGenerator(object):
     def g_id(self, v):
         return str(v) + "."
 
-    def g_status(self, v):
+    def g_done(self, v):
         if v is True:
-            return '(done)'
+            return '(x)'
         else:
-            return '(undone)'
+            return ''
 
     def g_task(self, v):
         return v
@@ -188,7 +184,7 @@ class TodoGenerator(object):
         lst = []
         lst.append(self.g_id(task.id))
         lst.append(self.g_task(task.content))
-        lst.append(self.g_status(task.status))
+        lst.append(self.g_done(task.done))
         return " ".join(lst)
 
     def generate(self, lst):
@@ -208,5 +204,12 @@ parser = TodoParser()  # build parser
 generator = TodoGenerator()  # build generator
 
 lst = parser.parse(open("todo.txt").read())
+
+for i in lst:
+
+    if isinstance(i, Task):
+        print i.id, i.done, i.content
+    else:
+        print i.name
 
 print generator.generate(lst)
