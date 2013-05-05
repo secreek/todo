@@ -199,17 +199,10 @@ class TodoGenerator(object):
             elif isinstance(i, Task):
                 re.append(self.gen_task(i))
             else:
-                raise SyntaxError('Not support '+  i)
+                raise SyntaxError('Not support type: '+  type(i))
         return self.g_newline.join(re)
 
 
-lexer = TodoLexer()
-parser = TodoParser()
-lst = parser.parse(open("todo.txt").read())
-for x in lst:
-    if isinstance(x, Task):
-        print x.id, x.content, x.done
-    else:
-        print x
-
-print TodoGenerator().generate(lst)
+lexer = TodoLexer()  # build lexer
+parser = TodoParser()  # build parser
+generator = TodoGenerator()  # build generator
