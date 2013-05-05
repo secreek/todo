@@ -4,91 +4,61 @@
 __version__ = '0.1.1'
 
 
-import re
+from ply import lex
+from ply import yacc
 
 
-done = True
-undone = False
+class TodoLexer(object):
 
-
-class TodoSyntaxError(SyntaxError):
-    pass
-
-
-class Task(object):
-    """
-    One line, one task.
-
-    Attributes
-      content  What the task is?    string
-      status   done or undone?      done or undone
-    """
-    def __init__(self, content, status=undone, id=None):
-        self.content = content
-        self.status = status
-        self.id = id
-
-    @property
-    def done(self):
-        return self.status is done
-
-    @property
-    def undone(self):
-        return self.status is undone
-
-
-class Parser(object):  # Parser for todo format string
-
-    # pattern to match signle line todo
-    pattern = re.compile(
-        r'\s*#(?P<id>\d+)\s+(?P<content>(.(?!\(done\)))*[\S])\s+(?P<status>\(done\))?'
+    tokens = (
+        "ID",
+        "TAG",
+        "STATUS",
+        "TASK",
     )
 
+    t_ignore = "\x20\x09"  # ignore spaces and tabs
+    t_ignore_COMMENT = r'\#.*'  # comments
+
+    def t_ID(self, t):
+        r'\#\d+([uU]|[lL]|[uU][lL]|[lL][uU])?'
+        t.value = int(t.value[1:])
+        return t
+
+    def t_TAG(self, t):
+        r'-+(.*)-+'
+        t.value = ''.join(i for i in t.value if i != '-')
+        t.value = t.value.strip()
+        return t
+
+    def t_STATUS(self, t):
+        r'(\(done\))|(\(undone\))'
+        t.value = (t.value == "(done)")
+        return t
+
+    def t_TASK(self, t):
+        r'(.(?!\(done\))(?!\(undone\)))*\S'
+        return t
+
+    def t_newline(self, t):
+        r'\n+'
+        t.lexer.lineno += len(t.value)
+
+    def t_error(self, t):
+        raise SyntaxError(
+            "Illegal character: '%s' at Line %d" % (t.value[0], t.lineno)
+        )
+
     def __init__(self):
-        pass
+        self.lexer = lex.lex(module=self)
 
-    def parse(self, string):
-        """
-        Parse single line string to dict.
+    def test(self, data):
+        self.lexer.input(data)
+        while True:
+            tok = self.lexer.token()
+            if not tok: break
+            print tok
 
-        The result dict include these keys
-          id            the id of the task              int
-          content       the content of this task        str
-          status        if the task done                done|undone
-        """
+lexer = TodoLexer()
+lexer.test(open("todo.txt").read())
 
-        m = self.pattern.match(string)
-        if not m:
-            raise TodoSyntaxError
-        else:
-            id = int(m.group("id"))
-            content = m.group("content")
-            status = done if m.group("status") == "(done)" else undone
-            return dict(id=id, content=content, status=status)
-
-
-    def parse_lines(self, string):
-        """
-        Parse multiple lines, return list of dicts
-        """
-        dcts = []
-        lines = string.splitlines()
-
-        for line_no, line in enumerate(lines):
-            if not line and line.isspace():
-                continue  # skip empty line
-            else:
-                try:
-                    dct = self.parse(line)
-                except TodoSyntaxError:
-                    # skip one line's syntax error
-                    # TODO: add logging info
-                    print "SyntaxError at line " + str(line_no)
-                else:
-                    dcts.append(dct)
-        return dcts
-
-####test
-s = open("todo.txt").read()
-parser = Parser()
-print parser.parse_lines(s)
