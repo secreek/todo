@@ -13,9 +13,9 @@ class Task(object):
     Task object.
     One task looks like:
 
-      #1 Go shopping (done)
+      1. Go shopping (done)
 
-    The '#1' is id, 'Go shopping' is the content and the '(done)' is the status
+    The '1.' is id, 'Go shopping' is the content and the '(done)' is the status
     And the status is optional(default: undone).
 
     id          int     task's id
@@ -52,7 +52,7 @@ class TodoLexer(object):
     """
     Lexer for Todo format string.
     Tokens
-      ID        e.g. '#1'
+      ID        e.g. '1.'
       TAG       e.g. '---- SampleTag ----'
       STATUS    e.g. '(done)', '(undone)'
       TASK      e.g. 'This is a task'
@@ -68,8 +68,8 @@ class TodoLexer(object):
     t_ignore = "\x20\x09"  # ignore spaces and tabs
 
     def t_ID(self, t):
-        r'\#\d+([uU]|[lL]|[uU][lL]|[lL][uU])?'
-        t.value = int(t.value[1:])
+        r'\d+\.([uU]|[lL]|[uU][lL]|[lL][uU])?'
+        t.value = int(t.value[:-1])
         return t
 
     def t_TAG(self, t):
@@ -167,7 +167,7 @@ class TodoGenerator(object):
     g_newline = "\n"
 
     def g_id(self, v):
-        return "#" + str(v)
+        return str(v) + "."
 
     def g_status(self, v):
         if v is True:
@@ -206,3 +206,7 @@ class TodoGenerator(object):
 lexer = TodoLexer()  # build lexer
 parser = TodoParser()  # build parser
 generator = TodoGenerator()  # build generator
+
+lst = parser.parse(open("todo.txt").read())
+
+print generator.generate(lst)
