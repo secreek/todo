@@ -13,7 +13,7 @@ class Task(object):
     Task object.
     One task looks like:
 
-      1. Go shopping (x)
+      1. (x) Go shopping
 
     if not done,  leave there blank.
 
@@ -209,3 +209,12 @@ class TodoGenerator(object):
 lexer = TodoLexer()  # build lexer
 parser = TodoParser()  # build parser
 generator = TodoGenerator()  # build generator
+
+lst = parser.parse(open("todo.txt").read())
+
+for i in lst:
+
+    if isinstance(i, Task):
+        print i.id, i.content, i.done
+
+print generator.generate(lst)
