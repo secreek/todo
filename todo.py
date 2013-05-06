@@ -2,9 +2,21 @@
 # coding=utf8
 """
 Usage:
-  test.py
+  test.py [-h|-v|-a]
   test.py clear
   test.py (<id> [done|undone])|<task>...
+
+Options:
+  -h --help      show this message
+  -v --version   show version
+  -a --all       show all
+
+Examples:
+  Add a task                    todo Go shopping!
+  Check a task as done          todo 1 done
+  Check a task as undone        todo 1 undne
+  Print all tasks               todo --all
+  Print undone tasks            todo
 """
 
 __version__ = '0.1.1'
@@ -50,7 +62,7 @@ class Todo(list):
         Return next id by auto_increment rule.
         """
         ids = [task.id for task in self]
-        max_id = max(ids) if ids else 1
+        max_id = max(ids) if ids else 0
         return (max_id + 1)
 
     def new_task(self, content):
@@ -359,8 +371,10 @@ class TodoApp(object):
                 self.add_task(args["<id>"])
         elif args["<task>"]:
             self.add_task(" ".join(args["<task>"]))
-        else:
+        elif args["--all"]:
             self.ls_tasks()
+        else:
+            self.ls_undone_tasks()
 
 
 if __name__ == '__main__':
