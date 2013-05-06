@@ -29,6 +29,13 @@ class Task(object):
         self.done = done
 
 
+class Todo(list):
+    """
+    A todo is kind of a list of tasks.
+    """
+    pass
+
+
 class TodoLexer(object):
     """
     Lexer for Todo format string.
@@ -71,14 +78,6 @@ class TodoLexer(object):
     def __init__(self):
         self.lexer = lex.lex(module=self)
 
-    def test(self, data):
-        self.lexer.input(data)
-        while True:
-            tok = self.lexer.token()
-            if not tok:
-                break
-            print tok
-
 
 class TodoParser(object):
     """
@@ -101,7 +100,7 @@ class TodoParser(object):
 
     def p_start(self, p):
         "start : translation_unit"
-        p[0] = self.lst
+        p[0] = self.todo
 
     def p_translation_unit(self, p):
         """
@@ -123,14 +122,14 @@ class TodoParser(object):
             done = False
             content = p[2]
         task = Task(p[1], content, done)
-        self.lst.append(task)
+        self.todo.append(task)
 
     def __init__(self):
         self.parser = yacc.yacc(module=self, debug=0, write_tables=0)
 
     def parse(self, data):
         # reset list
-        self.lst = list()
+        self.todo = Todo()
         return self.parser.parse(data)
 
 
@@ -160,9 +159,17 @@ class TodoGenerator(object):
         lst.append(self.g_task(task.content))
         return " ".join(lst)
 
-    def generate(self, lst):
+    def generate(self, todo):
+        """
+        Generate todo to string format.
+
+        todo    kind of a list of tasks, instance of class Todo
+
+        e.g.
+          [<task object>, ..] => "1. (x) do something .."
+        """
         re = []
-        for i in lst:
+        for i in todo:
             if isinstance(i, Task):
                 re.append(self.gen_task(i))
             else:
@@ -215,7 +222,7 @@ class TodoApp(object):
         open(self.file_path(), "w").write(content)
 
 
-todo = TodoApp()
+s  = open("/home/hit9/todo.txt").read()
 
-for task in todo.tasks:
-    print task.content, task.done
+for task in parser.parse(s):
+    print task.content
