@@ -4,6 +4,7 @@
 __version__ = '0.1.1'
 
 import os
+from os.path import expanduser
 from ply import lex
 from ply import yacc
 
@@ -176,13 +177,45 @@ generator = TodoGenerator()  # build generator
 
 class TodoApp(object):
     """
-    Todo app
+    Todo application.
+
+    Use which file for storage?
+      if "./todo.txt" exists, use it. else use "~/todo.txt" instead.
+      if both two paths not exist, touch one in "~" directory.
     """
 
     def __init__(self):
-        #TODO: read file and parse to list
-        if os.path.exists("todo.txt"):
-            f = open("todo.txt", "w")
+        self.tasks = self.parse_from_file()
+
+    def file_path(self):
+        # find the file's path to use
+        fn = "todo.txt"
+        home = expanduser("~")
+        home_fn = os.path.join(home, fn)
+        open(home_fn, "a").close()  # touch if not exists
+
+        if os.path.exists(fn):
+            return fn
         else:
-            f = open("~/todo.txt", "w")
-        self.tasks = parser.parse(f.read())
+            return home_fn
+
+    def parse_from_file(self):
+        """
+        read todos from file.
+        return the tasks of "todo.txt".
+        """
+        content = open(self.file_path()).read()
+        return parser.parse(content)
+
+    def generate_to_file(self, tasks):
+        """
+        generate tasks to file.
+        """
+        content = generator.generate(tasks)
+        open(self.file_path(), "w").write(content)
+
+
+todo = TodoApp()
+
+for task in todo.tasks:
+    print task.content, task.done
