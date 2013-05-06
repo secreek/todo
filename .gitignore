@@ -4,3 +4,6 @@
 venv/
 todo.txt
 test.py
+build/
+dist/
+todo.py.egg-info/
