@@ -1,5 +1,11 @@
 #!/usr/bin/env python
 # coding=utf8
+"""
+Usage:
+  test.py
+  test.py clear
+  test.py (<id> [done|undone])|<task>...
+"""
 
 __version__ = '0.1.1'
 
@@ -79,7 +85,7 @@ class Todo(list):
         """
         Clear all tasks!
         """
-        self = Todo()
+        self[:] = []
 
 
 class TodoLexer(object):
@@ -309,6 +315,13 @@ class TodoApp(object):
         self.todo.check_task(id)
         self.generate_to_file()
 
+    def undo_task(self, id):
+        """
+        Check one task to undone.
+        """
+        self.todo.undo_task(id)
+        self.generate_to_file()
+
     def clear_tasks(self):
         """
         Clear todo!
@@ -316,7 +329,40 @@ class TodoApp(object):
         self.todo.clear()
         self.generate_to_file()
 
+    def add_task(self, content):
+        """
+        Add new task.
+        """
+        self.todo.new_task(content)
+        self.generate_to_file()
+
     def run(self):
         """
         Get arguments from cli and run!
-        """w
+        """
+        from docopt import docopt
+        args = docopt(__doc__, version=__version__)
+
+        if args["clear"]:
+            self.clear_tasks()
+        elif args["<id>"]:
+            try:
+                id = int(args["<id>"])
+
+                if args["done"]:
+                    self.check_task(id)
+                elif args["undone"]:
+                    self.undo_task(id)
+                else:
+                    self.print_task_by_id(id)
+            except ValueError:  # if not an integer format str, regard as a task
+                self.add_task(args["<id>"])
+        elif args["<task>"]:
+            self.add_task(" ".join(args["<task>"]))
+        else:
+            self.ls_tasks()
+
+
+if __name__ == '__main__':
+    app = TodoApp()
+    app.run()
