@@ -7,6 +7,7 @@ import os
 from ply import lex
 from ply import yacc
 from os.path import expanduser
+from termcolor import colored
 
 
 class Task(object):
@@ -57,24 +58,20 @@ class Todo(list):
         """
         Check task's status to done.
         """
-        for task in todo:
-            if todo.id == id:
-                task.done = True
+        self.get_task(id).done = True
 
     def undo_task(self, id):
         """
         Undone some task.
         """
-        for task in todo:
-            if todo.id == id:
-                task.done = True
+        self.get_task(id).done = False
 
     def get_task(self, id):
         """
         Get task by id from todo.
         """
-        for task in todo:
-            if todo.id == id
+        for task in self:
+            if task.id == id:
                 return task
         return None
 
@@ -226,11 +223,6 @@ class TodoGenerator(object):
         return self.g_newline.join(re)
 
 
-lexer = TodoLexer()  # build lexer
-parser = TodoParser()  # build parser
-generator = TodoGenerator()  # build generator
-
-
 class TodoApp(object):
     """
     Todo application.
@@ -239,6 +231,10 @@ class TodoApp(object):
       if "./todo.txt" exists, use it. else use "~/todo.txt" instead.
       if both two paths not exist, touch one in "~" directory.
     """
+
+    lexer = TodoLexer()  # build lexer
+    parser = TodoParser()  # build parser
+    generator = TodoGenerator()  # build generator
 
     def __init__(self):
         self.todo = self.parse_from_file()
@@ -261,11 +257,66 @@ class TodoApp(object):
         return the tasks of "todo.txt".
         """
         content = open(self.file_path()).read()
-        return parser.parse(content)
+        return self.parser.parse(content)
 
     def generate_to_file(self):
         """
         generate tasks to file.
         """
-        content = generator.generate(self.todo)
+        content = self.generator.generate(self.todo)
         open(self.file_path(), "w").write(content)
+
+    def print_task(self, task):
+        """
+        print single task to screen.
+        """
+        status = colored('✓', 'green') if task.done else colored('✖', 'red')
+        print str(task.id) + '.' + ' ' + status + ' ' + task.content
+
+    def print_task_by_id(self, id):
+        """
+        print single task by its id.
+        """
+        self.print_task(self.todo.get_task(id))
+
+    def ls_tasks(self):
+        """
+        ls all tasks ouput to screen.
+        """
+        for task in self.todo:
+            self.print_task(task)
+
+    def ls_undone_tasks(self):
+        """
+        ls all undone tasks
+        """
+        for task in self.todo:
+            if not task.done:
+                self.print_task(task)
+
+    def ls_done_tasks(self):
+        """
+        ls all done tasks
+        """
+        for task in self.todo:
+            if task.done:
+                self.print_task(task)
+
+    def check_task(self, id):
+        """
+        Check one task to done.
+        """
+        self.todo.check_task(id)
+        self.generate_to_file()
+
+    def clear_tasks(self):
+        """
+        Clear todo!
+        """
+        self.todo.clear()
+        self.generate_to_file()
+
+    def run(self):
+        """
+        Get arguments from cli and run!
+        """w
