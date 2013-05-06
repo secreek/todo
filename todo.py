@@ -4,14 +4,13 @@
 __version__ = '0.1.1'
 
 import os
-from os.path import expanduser
 from ply import lex
 from ply import yacc
+from os.path import expanduser
 
 
 class Task(object):
     """
-    Task object.
     One task looks like
 
       1. (x) Go shopping
@@ -32,8 +31,58 @@ class Task(object):
 class Todo(list):
     """
     A todo is kind of a list of tasks.
+
+    Methods here
+      next_id()                 return the next id should be.
+      new_task(content)         new an undone task from content
+      clear()                   clear this todo
     """
-    pass
+
+    def next_id(self):
+        """
+        Return next id by auto_increment rule.
+        """
+        ids = [task.id for task in self]
+        max_id = max(ids) if ids else 1
+        return (max_id + 1)
+
+    def new_task(self, content):
+        """
+        Append a undone task by content
+        """
+        task = Task(self.next_id(), content, False)
+        return self.append(task)
+
+    def check_task(self, id):
+        """
+        Check task's status to done.
+        """
+        for task in todo:
+            if todo.id == id:
+                task.done = True
+
+    def undo_task(self, id):
+        """
+        Undone some task.
+        """
+        for task in todo:
+            if todo.id == id:
+                task.done = True
+
+    def get_task(self, id):
+        """
+        Get task by id from todo.
+        """
+        for task in todo:
+            if todo.id == id
+                return task
+        return None
+
+    def clear(self):
+        """
+        Clear all tasks!
+        """
+        self = Todo()
 
 
 class TodoLexer(object):
@@ -192,7 +241,7 @@ class TodoApp(object):
     """
 
     def __init__(self):
-        self.tasks = self.parse_from_file()
+        self.todo = self.parse_from_file()
 
     def file_path(self):
         # find the file's path to use
@@ -214,15 +263,9 @@ class TodoApp(object):
         content = open(self.file_path()).read()
         return parser.parse(content)
 
-    def generate_to_file(self, tasks):
+    def generate_to_file(self):
         """
         generate tasks to file.
         """
-        content = generator.generate(tasks)
+        content = generator.generate(self.todo)
         open(self.file_path(), "w").write(content)
-
-
-s  = open("/home/hit9/todo.txt").read()
-
-for task in parser.parse(s):
-    print task.content
