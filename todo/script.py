@@ -80,11 +80,11 @@ class TodoApp(object):
         task_id = colored(str(task.id), "cyan")
         print task_id + '.' + ' ' + status + '  ' + content
 
-    def print_task_by_id(self, id):
+    def print_task_by_id(self, task_id):
         """
         Print single task by its id.
         """
-        self.print_task(self.todo[id])
+        self.print_task(self.todo[task_id])
 
     def ls_tasks(self):
         """
@@ -101,18 +101,18 @@ class TodoApp(object):
             if not task.done:
                 self.print_task(task)
 
-    def check_task(self, id):
+    def check_task(self, task_id):
         """
         Check one task to done.
         """
-        self.todo.check_task(id)
+        self.todo.check_task(task_id)
         self.generate_to_file()
 
-    def undo_task(self, id):
+    def undo_task(self, task_id):
         """
         Check one task to undone.
         """
-        self.todo.undo_task(id)
+        self.todo.undo_task(task_id)
         self.generate_to_file()
 
     def clear_tasks(self):
@@ -133,8 +133,7 @@ class TodoApp(object):
         """
         Remove task from todo by its id
         """
-        task = self.todo[task_id]
-        self.todo.remove(task)
+        self.todo.remove_task(task_id)
         self.generate_to_file()
 
     def run(self):
@@ -148,15 +147,15 @@ class TodoApp(object):
             self.clear_tasks()
         elif args["<id>"]:
             try:
-                id = int(args["<id>"])
+                task_id = int(args["<id>"])
                 if args["done"]:
-                    self.check_task(id)
+                    self.check_task(task_id)
                 elif args["undone"]:
-                    self.undo_task(id)
+                    self.undo_task(task_id)
                 elif args["remove"]:
-                    self.remove_task(id)
+                    self.remove_task(task_id)
                 else:
-                    self.print_task_by_id(id)
+                    self.print_task_by_id(task_id)
             except ValueError:
                 # if not an integer format str, use as a task
                 self.add_task(args["<id>"])

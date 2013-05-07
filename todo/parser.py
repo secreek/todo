@@ -1,10 +1,7 @@
 # coding=utf8
+
 """
 Parser for todo format string.
-
-  from todo.parser import parser
-  parser.parse(string)  # return an Todo instance
-
 """
 
 from models import Task

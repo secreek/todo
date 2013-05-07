@@ -1,11 +1,9 @@
 # coding=utf8
+
 """
 Generator from todo to todo format string.
-
-  from todo.generator import generator
-  generator.generate(todo)  # return str
-
 """
+
 from models import Task
 from models import Todo
 

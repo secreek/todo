@@ -15,8 +15,8 @@ class Task(object):
       done      bool
     """
 
-    def __init__(self, id, content, done=False):
-        self.id = id
+    def __init__(self, _id, content, done=False):
+        self.id = _id
         self.content = content
         self.done = done
 
@@ -28,8 +28,16 @@ class TaskNotFound(Exception):
 class Todo(list):
     """
     A todo is kind of a list of tasks.
-    But todo[task_id] will get an item which id is task_id
     """
+
+    def __getitem__(self, task_id):
+        """
+        Get task by id.
+        """
+        for task in self:
+            if task.id == task_id:
+                return task
+        raise TaskNotFound
 
     def next_id(self):
         """
@@ -46,26 +54,23 @@ class Todo(list):
         task = Task(self.next_id(), content, False)
         return self.append(task)
 
-    def __getitem__(self, id):
+    def remove_task(self, task_id):
         """
-        Get task by id.
+        Remove a task by id
         """
-        for task in self:
-            if task.id == id:
-                return task
-        raise TaskNotFound
+        self.remove(self[task_id])
 
-    def check_task(self, id):
+    def check_task(self, task_id):
         """
         Check task's status to done
         """
-        self[id].done = True
+        self[task_id].done = True
 
-    def undo_task(self, id):
+    def undo_task(self, task_id):
         """
         Undone some task
         """
-        self[id].done = False
+        self[task_id].done = False
 
     def clear(self):
         """
