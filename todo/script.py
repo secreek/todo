@@ -23,6 +23,7 @@ Examples:
 
 from models import Task
 from models import Todo
+from models import TaskNotFound
 from parser import parser
 from generator import generator
 from version import __version__
@@ -142,7 +143,7 @@ class TodoApp(object):
         Get arguments from cli and run!
         """
 
-        args = docopt(__doc__, version=__version__)
+        args = docopt(__doc__, version="Version: " + __version__)
 
         if args["clear"]:
             self.clear_tasks()
@@ -158,6 +159,8 @@ class TodoApp(object):
                     self.print_task_by_id(id)
             except ValueError:  # if not an integer format str, regard as a task
                 self.add_task(args["<id>"])
+            except TaskNotFound:
+                print colored("Task Not Found.", "red")
         elif args["<task>"]:
             self.add_task(" ".join(args["<task>"]))
         elif args["--all"]:
