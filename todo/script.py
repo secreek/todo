@@ -17,6 +17,7 @@ Examples:
   Check a task as undone        todo 1 undne
   Print all tasks               todo --all
   Print undone tasks            todo
+  Remove a task                 todo 1 remove
 """
 
 
@@ -75,7 +76,9 @@ class TodoApp(object):
         Print single task to terminal.
         """
         status = colored('✓', 'green') if task.done else colored('✖', 'red')
-        print str(task.id) + '.' + ' ' + status + '  ' + task.content
+        content = colored(task.content, "blue")
+        task_id = colored(str(task.id), "cyan")
+        print task_id + '.' + ' ' + status + '  ' + content
 
     def print_task_by_id(self, id):
         """

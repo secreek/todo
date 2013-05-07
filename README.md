@@ -19,7 +19,7 @@ Usage
 Usage:
   test.py [-h|-v|-a]
   test.py clear
-  test.py (<id> [done|undone])|<task>...
+  test.py (<id> [done|undone|remove])|<task>...
 
 Options:
   -h --help      show this message
@@ -32,6 +32,7 @@ Examples:
   Check a task as undone        todo 1 undne
   Print all tasks               todo --all
   Print undone tasks            todo
+  Remove a task                 todo 1 remove
 ```
 
 Storage

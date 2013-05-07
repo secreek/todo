@@ -12,12 +12,12 @@ setup(
     keywords="todo readable commandline cli",
     url='http://github.com/hit9/todo',
     packages=['todo'],
-    include_package_data = True,
-    entry_points = {
+    include_package_data=True,
+    entry_points={
         'console_scripts': [
             'todo = todo.script:main'
         ]
     },
     long_description=open('README.md').read(),
-    install_requires = open("requirements.txt").read().splitlines()
+    install_requires=open("requirements.txt").read().splitlines()
 )

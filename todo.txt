@@ -1,3 +1,4 @@
 1.     Review the codes.
-2.     PEP8 check
+2. (x) PEP8 check
 3.     Andriod Platform?
+4.     The todo class
