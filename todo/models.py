@@ -28,7 +28,7 @@ class TaskNotFound(Exception):
 class Todo(list):
     """
     A todo is kind of a list of tasks.
-    But remember that todo[task_id] will get an item whose id is task_id
+    But todo[task_id] will get an item which id is task_id
     """
 
     def next_id(self):

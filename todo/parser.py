@@ -10,7 +10,6 @@ Parser for todo format string.
 from models import Task
 from models import Todo
 
-
 from ply import lex
 from ply import yacc
 

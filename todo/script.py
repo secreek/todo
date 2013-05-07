@@ -4,7 +4,7 @@
 Usage:
   test.py [-h|-v|-a]
   test.py clear
-  test.py (<id> [done|undone])|<task>...
+  test.py (<id> [done|undone|remove])|<task>...
 
 Options:
   -h --help      show this message
@@ -18,7 +18,6 @@ Examples:
   Print all tasks               todo --all
   Print undone tasks            todo
 """
-
 
 
 from models import Task
@@ -45,11 +44,8 @@ class TodoApp(object):
 
     def file_path(self):
         """
-        Use which file for storage
-          if "./todo.txt" exists, use it. else use "~/todo.txt" instead.
-          if both two paths not exist, touch one in "~" directory.
+          todo will use ./todo.txt prior to ~/todo.txt for persistent storage.
         """
-        # find the file's path to use
         fn = "todo.txt"
         home_fn = join(expanduser("~"), fn)
         open(home_fn, "a").close()  # touch if not exists
@@ -79,7 +75,7 @@ class TodoApp(object):
         Print single task to terminal.
         """
         status = colored('✓', 'green') if task.done else colored('✖', 'red')
-        print str(task.id) + '.' + ' ' + status + ' ' + task.content
+        print str(task.id) + '.' + ' ' + status + '  ' + task.content
 
     def print_task_by_id(self, id):
         """
@@ -100,14 +96,6 @@ class TodoApp(object):
         """
         for task in self.todo:
             if not task.done:
-                self.print_task(task)
-
-    def ls_done_tasks(self):
-        """
-        ls all done tasks
-        """
-        for task in self.todo:
-            if task.done:
                 self.print_task(task)
 
     def check_task(self, id):
@@ -138,6 +126,14 @@ class TodoApp(object):
         self.todo.new_task(content)
         self.generate_to_file()
 
+    def remove_task(self, task_id):
+        """
+        Remove task from todo by its id
+        """
+        task = self.todo[task_id]
+        self.todo.remove(task)
+        self.generate_to_file()
+
     def run(self):
         """
         Get arguments from cli and run!
@@ -150,14 +146,16 @@ class TodoApp(object):
         elif args["<id>"]:
             try:
                 id = int(args["<id>"])
-
                 if args["done"]:
                     self.check_task(id)
                 elif args["undone"]:
                     self.undo_task(id)
+                elif args["remove"]:
+                    self.remove_task(id)
                 else:
                     self.print_task_by_id(id)
-            except ValueError:  # if not an integer format str, regard as a task
+            except ValueError:
+                # if not an integer format str, use as a task
                 self.add_task(args["<id>"])
             except TaskNotFound:
                 print colored("Task Not Found.", "red")
@@ -170,6 +168,9 @@ class TodoApp(object):
 
 
 def main():
+    """
+    Run todo cli script.
+    """
     app = TodoApp()
     app.run()
 
