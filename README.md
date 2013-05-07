@@ -46,6 +46,8 @@ Well, the storage is readable, sample:
 2.     Go shopping.
 ```
 
+Or checkout this file: [todo.txt](todo.txt)
+
 License
 --------
 

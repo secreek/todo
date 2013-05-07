@@ -1,0 +1,3 @@
+1.     Review the codes.
+2.     PEP8 check
+3.     Andriod Platform?
