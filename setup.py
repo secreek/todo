@@ -10,7 +10,7 @@ setup(
     """,
     license="MIT",
     keywords="todo readable commandline cli",
-    url='http://github.com/hit9/todo',
+    url='https://github.com/secreek/todo',
     packages=['todo'],
     include_package_data=True,
     entry_points={

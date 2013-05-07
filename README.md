@@ -10,7 +10,7 @@ Install
 
 Use pip install from git
 
-    [sudo] pip install git+git://github.com/hit9/todo.git
+    [sudo] pip install git+git://github.com/secreek/todo.git
 
 Usage
 ------
@@ -48,6 +48,7 @@ Well, the storage is readable, sample:
 ```
 
 Or checkout this file: [todo.txt](todo.txt)
+
 
 License
 --------
