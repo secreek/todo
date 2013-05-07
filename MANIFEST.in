@@ -1,0 +1,2 @@
+include LICENSE-MIT README.md requirements.txt
+global-include *.py
