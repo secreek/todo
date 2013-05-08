@@ -16,7 +16,7 @@ class TodoLexer(object):
     Lexer for Todo format string.
     Tokens
       ID        e.g. '1.'
-      DONE      e.g. '(x)'
+      DONE      e.g. '[x]'
       TASK      e.g. 'This is a task'
     """
 
@@ -34,11 +34,11 @@ class TodoLexer(object):
         return t
 
     def t_DONE(self, t):
-        r'(\(x\))'
+        r'(\[x\])'
         return t
 
     def t_TASK(self, t):
-        r'((?!\(x\))).+'
+        r'((?!\[x\])).+'
         return t
 
     def t_newline(self, t):

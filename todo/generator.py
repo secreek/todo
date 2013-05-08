@@ -20,7 +20,7 @@ class TodoGenerator(object):
 
     def g_done(self, v):
         if v is True:
-            return '(x)'
+            return '[x]'
         else:
             return '   '
 

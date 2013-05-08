@@ -5,7 +5,7 @@ class Task(object):
     """
     One task looks like
 
-      1. (x) Go shopping
+      1. [x] Go shopping
 
     if this task not done, leave there blank.
 
