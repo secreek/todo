@@ -71,6 +71,17 @@ class TodoApp(object):
         content = generator.generate(self.todo)
         open(self.file_path(), "w").write(content)
 
+    def sync(func):
+        """
+        Use decorator to get rid of the duplicate `self.generate_to_file()` call
+        """
+        def __decorator(self, *args, **kwargs):
+            func(self, *args, **kwargs)
+
+            # use self to access `generate_to_file` method
+            self.generate_to_file()
+        return __decorator
+
     def print_task(self, task):
         """
         Print single task to terminal.
@@ -101,40 +112,40 @@ class TodoApp(object):
             if not task.done:
                 self.print_task(task)
 
+    @sync
     def check_task(self, task_id):
         """
         Check one task to done.
         """
         self.todo.check_task(task_id)
-        self.generate_to_file()
 
+    @sync
     def undo_task(self, task_id):
         """
         Check one task to undone.
         """
         self.todo.undo_task(task_id)
-        self.generate_to_file()
 
+    @sync
     def clear_tasks(self):
         """
         Clear todo!
         """
         self.todo.clear()
-        self.generate_to_file()
 
+    @sync
     def add_task(self, content):
         """
         Add new task.
         """
         self.todo.new_task(content)
-        self.generate_to_file()
 
+    @sync
     def remove_task(self, task_id):
         """
         Remove task from todo by its id
         """
         self.todo.remove_task(task_id)
-        self.generate_to_file()
 
     def run(self):
         """
