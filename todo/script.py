@@ -2,9 +2,9 @@
 
 """
 Usage:
-  test.py [-h|-v|-a]
-  test.py clear
-  test.py (<id> [done|undone|remove])|<task>...
+  todo [-h|-v|-a]
+  todo clear
+  todo (<id> [done|undone|remove])|<task>...
 
 Options:
   -h --help      show this message
