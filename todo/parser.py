@@ -39,11 +39,11 @@ class Lexer(object):
         return t
 
     def t_DONE(self, t):
-        r'(\(x\))'
+        r'(\[x\])'
         return t
 
     def t_TASK(self, t):
-        r'((?!\(x\))).+'
+        r'((?!\[x\])).+'
         return t
 
     def t_newline(self, t):
@@ -115,3 +115,7 @@ class Parser(object):
         # And then split it to get its body, let yacc parse its body
         self.todo = Todo()  # reset todo instance
         return self.parser.parse(data)
+
+
+lexer = Lexer()
+parser = Parser()

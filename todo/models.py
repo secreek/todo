@@ -17,7 +17,7 @@ class Task(object):
     """
 
     def __init__(self, task_id, content, done=False):
-        self.id = _id
+        self.id = task_id
         self.content = content
         self.done = done
 
@@ -35,7 +35,7 @@ class Todo(object):
 
     Attributes
       name    str     todo's name, should be unique in all your todos in your os.
-      tasks   list     tasks in this todo, each of them is an instance of Task
+      tasks   list    tasks in this todo, each of them is an instance of Task
     """
 
     def __init__(self, name=None, tasks=[]):
@@ -48,7 +48,7 @@ class Todo(object):
         """
         Generate the next id should be.
 
-        For the id of one task is an integer, the id(s) of a todo object is made up of
+        For the id of one task is an integer, the id(s) of a todo object will be made up of
         many integers. We find the max of them, and plus one to it as the next id for new task
         """
 
