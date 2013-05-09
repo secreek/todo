@@ -1,9 +1,10 @@
-test todo
+For tests
 ---------
 1. [x] Review the codes.
 2. [x] PEP8 check
 3.     Andriod Platform?
-4.     Rebuild the codes(Design todo class, No More be a subclass of list, but new an attribute tasks to store tasks)
-5.     Design the id generate rule, need to check if the ids from file valid? or We just dont use numbered id, instead a '-'
-6.     design gist storage
-7.     p
+4. [x] Rebuild the codes(Design todo class, No More be a subclass of list, but new an attribute tasks to store tasks)
+5. [x] Design the id generate rule, need to check if the ids from file valid? or We just dont use numbered id, instead a '-'
+7.     github's 401 error is to say that your token is out of date
+8.     rebuild the push and pull, rebuild the GithubToken class and GistId class
+9.     Add messages output if auth success or login success.
