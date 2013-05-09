@@ -73,45 +73,40 @@ class TodoTxt(object):
 
 
 class Gist(object):
-    """
-    Todo in the remote gist.github.com
-    """
 
     def __init__(self):
+        """
+        mkdir ~/.todo if not exists
+        """
         self.todo_dir = join(home, ".todo")
-        self.token_file = join(self.todo_dir, "token")
-        self.gist_id_file = join(self.todo_dir, "gist_id")
-        self.token = self.get_token()
-        self.gist_id = self.get_gist_id()
+        self.content = None
+        if not exists(self.todo_dir):
+            mkdir(self.todo_dir)
 
-    def check_todo_dir(func):
-        def wrapper(self, *args, **kwargs):
-            if not exists(self.todo_dir):
-                mkdir(self.todo_dir)
-            return func(self, *args, **kwargs)
-        return wrapper
-
-    @check_todo_dir
-    def get_gist_id(self):
-        if exists(self.gist_id_file):
-            return open(self.gist_id_file).read().strip()
+    def read(self):
+        if exists(self.path):
+            self.content = open(self.path).read().strip()
+            return self.content
         return None
 
-    @check_todo_dir
-    def set_gist_id(self, new_gist_id):
-        self.gist_id = new_gist_id.strip()
-        return open(self.gist_id_file, "w").write(self.new_gist_id)
+    def save(self):
+        return open(self.path, "w").write(self.content.strip())
 
-    @check_todo_dir
-    def get_token(self):
-        if exists(self.token_file):
-            return open(self.token_file).read().strip()
-        return None
 
-    @check_todo_dir
-    def set_token(self, new_token):
-        self.token = new_token.strip()
-        return open(self.token_file, "w").write(self.token)
+class GithubToken(Gist):
+
+    def __init__(self):
+        super(GithubToken, self).__init__()
+        self.path = join(self.todo_dir, "token")
+        self.read()
+
+
+class GistId(Gist):
+
+    def __init__(self):
+        super(GistId, self).__init__()
+        self.path = join(self.todo_dir, "gist_id")
+        self.read()
 
 
 class App(object):
@@ -228,39 +223,38 @@ class App(object):
         """
         Push todo to gist.github.com
         """
-        gist = Gist()
         github = Github()
+        gist_id = GistId()
+        token = GithubToken()
 
-        if not gist.gist_id:
-            # if gist id not found
-            gist_id = ""
-            while not gist_id:
-                gist_id = raw_input("Gist id:")
-            gist.set_gist_id(gist_id)
-
-        if not gist.token:
-            user = raw_input("Github username:")
-            password = ""
-            while not password:
-                password = getpass('Password for %s:' % user)
-            token = github.authorize(user, password)
-            if token:
-                gist.set_token(token)
+        if not gist_id.content:
+            gist_id.content = raw_input("Gist id:")
+            gist_id.save()
+        if not token.content:
+            user = raw_input("Github user:")
+            password = getpass("Password for %s:" % user)
+            gh_token = github.authorize(user, password)
+            if gh_token:
+                token.content = gh_token
+                token.save()
             else:
-                exit("Failed to authorize")
+                exit("Failed to login.")
+        github.login(token.content)
 
-        github.login(gist.token)
-
+        if not self.todo.name:
+            name = "NoName"
+        else:
+            name = self.todo.name
         files = {
-            self.todo.name: {
+            name: {
                 "content": generator.generate(self.todo)
             }
         }
 
-        edit_success = github.edit_gist(gist.gist_id, files=files)
+        is_ok = github.edit_gist(gist_id.content, files=files)
 
-        if edit_success:
-            print "Pushed to https://gist.github.com/" + gist.gist_id + " file: " + self.todo.name
+        if is_ok:
+            print "Pushed to file '" + name + "' at https://gist.github.com/" + gist_id.content
         else:
             print "Pushed failed."
 
