@@ -126,6 +126,7 @@ class GithubToken(Gist):
                 # if response 200(ok)
                 self.set(response_token)
                 self.save()
+                print "Authorized success, token stored in %s" % self.path
             else:
                 exit("Failed to authorize.")
         return self.content
@@ -147,6 +148,7 @@ class GistId(Gist):
         if self.is_empty:
             self.set(raw_input("Gist id:"))
             self.save()
+            print "Gist id stored in %s" % self.path
         return self.content
 
 
