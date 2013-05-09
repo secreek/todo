@@ -190,4 +190,4 @@ class Github(object):
         re = self.session.get("https://api.github.com/gists/" + gist_id)
         if re.status_code == requests.codes.ok:
             return re.json()
-        re.raise_for_status()
+        return None

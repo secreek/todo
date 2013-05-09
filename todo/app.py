@@ -19,6 +19,7 @@ Examples:
   Print all tasks               todo --all
   Print undone tasks            todo
   Remove a task                 todo 1 remove
+  Push to gist.github.com       todo push
 """
 
 __version__ = "0.1.4"
@@ -62,7 +63,11 @@ class TodoTxt(object):
         Return todo object.
         """
         content = open(self.filepath).read()
-        return parser.parse(content)
+        dct = {
+            "todo": parser.parse(content),
+            "content": content
+        }
+        return dct
 
     def write(self, todo):
         """
@@ -92,13 +97,19 @@ class Gist(object):
     def save(self):
         return open(self.path, "w").write(self.content.strip())
 
+    def set(self, content):
+        self.content = content
+
+    @property
+    def is_empty(self):
+        return not self.content
+
 
 class GithubToken(Gist):
 
     def __init__(self):
         super(GithubToken, self).__init__()
         self.path = join(self.todo_dir, "token")
-        self.read()
 
 
 class GistId(Gist):
@@ -106,7 +117,6 @@ class GistId(Gist):
     def __init__(self):
         super(GistId, self).__init__()
         self.path = join(self.todo_dir, "gist_id")
-        self.read()
 
 
 class App(object):
@@ -119,7 +129,9 @@ class App(object):
     """
     def __init__(self):
         self.todo_txt = TodoTxt()
-        self.todo = self.todo_txt.read()
+        dct = self.todo_txt.read()
+        self.todo = dct["todo"]
+        self.txt_content = dct["content"]
 
     def write_to_txt(func):
         """
@@ -224,39 +236,56 @@ class App(object):
         Push todo to gist.github.com
         """
         github = Github()
+
         gist_id = GistId()
         token = GithubToken()
 
-        if not gist_id.content:
-            gist_id.content = raw_input("Gist id:")
+        # read content from ~/.todo/xxx
+        gist_id.read()
+        token.read()
+
+        if gist_id.is_empty:
+            gist_id.set(raw_input("Gist id:"))
             gist_id.save()
-        if not token.content:
+
+        if token.is_empty:
             user = raw_input("Github user:")
             password = getpass("Password for %s:" % user)
-            gh_token = github.authorize(user, password)
-            if gh_token:
-                token.content = gh_token
+            response_token = github.authorize(user, password)
+
+            if response_token:
+                # if response 200(ok)
+                token.set(response_token)
                 token.save()
             else:
-                exit("Failed to login.")
+                exit("Failed to authorize.")
+        # set sessin with token
         github.login(token.content)
 
         if not self.todo.name:
             name = "NoName"
         else:
             name = self.todo.name
+
         files = {
             name: {
-                "content": generator.generate(self.todo)
+                "content": self.txt_content
             }
         }
 
-        is_ok = github.edit_gist(gist_id.content, files=files)
+        edit_ok = github.edit_gist(gist_id.content, files=files)
 
-        if is_ok:
+        if edit_ok:
             print "Pushed to file '" + name + "' at https://gist.github.com/" + gist_id.content
         else:
             print "Pushed failed."
+
+    def pull(self):
+        """
+        Pull todo from remote gist server.
+        """
+        pass
+
 
     def run(self):
         """
