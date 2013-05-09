@@ -117,7 +117,7 @@ class Github(object):
     # Thanks.
 
     client_id = "164f614c7c92c7a8c6bd"
-    client_secret = "155aef99ec0949eec8239095f567640fa0aab987"
+    client_secret = "d37ce92277ac9c2e6b90c81039f068ea9bb765c2"
     note_url = "https://github.com/secreek/todo"
     note = "Cli todo tool with readable storage."
     scopes = ["user", "gist"]
@@ -131,7 +131,7 @@ class Github(object):
     def authorize(self, login, password):
         """
         Fetch access_token from github.com using username & password.
-        return token
+        if success, return token(a string). else return None
         """
         self.session.auth = (login, password)
         data = dict(
@@ -145,8 +145,11 @@ class Github(object):
         data_json = json.dumps(data)
         headers = {'content-type': 'application/json'}
         r = self.session.post("https://api.github.com/authorizations", data=data_json, headers=headers)
-        token = r.json()["token"]
-        return token
+        if r.status_code == 201:
+            token = r.json()["token"]
+            return token
+        else:
+            return None
 
     def login(self, token):
         """
@@ -171,7 +174,7 @@ class Github(object):
             description=description
         )
         response = self.session.patch("https://api.github.com/gists/" + gist_id, data=json.dumps(data))
-        return response.status_code == requests.codes.ok
+        return response.status_code == 200
 
     def get_gist(self, gist_id):
         """
