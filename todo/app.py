@@ -111,12 +111,43 @@ class GithubToken(Gist):
         super(GithubToken, self).__init__()
         self.path = join(self.todo_dir, "token")
 
+    def get(self):
+        """
+        If exists, use it.
+        else, authorize and save it to file.
+        """
+        self.read()
+        if self.is_empty:
+            user = raw_input("Github user:")
+            password = getpass("Password for %s:" % user)
+            response_token = Github().authorize(user, password)
+
+            if response_token:
+                # if response 200(ok)
+                self.set(response_token)
+                self.save()
+            else:
+                exit("Failed to authorize.")
+        return self.content
+
 
 class GistId(Gist):
 
     def __init__(self):
         super(GistId, self).__init__()
         self.path = join(self.todo_dir, "gist_id")
+
+    def get(self):
+        """
+        Get gist id any way.
+        if exists and not empty, use it
+        else, ask user to input one, and save it to file.
+        """
+        self.read()
+        if self.is_empty:
+            self.set(raw_input("Gist id:"))
+            self.save()
+        return self.content
 
 
 class App(object):
@@ -236,31 +267,10 @@ class App(object):
         Push todo to gist.github.com
         """
         github = Github()
-
-        gist_id = GistId()
-        token = GithubToken()
-
-        # read content from ~/.todo/xxx
-        gist_id.read()
-        token.read()
-
-        if gist_id.is_empty:
-            gist_id.set(raw_input("Gist id:"))
-            gist_id.save()
-
-        if token.is_empty:
-            user = raw_input("Github user:")
-            password = getpass("Password for %s:" % user)
-            response_token = github.authorize(user, password)
-
-            if response_token:
-                # if response 200(ok)
-                token.set(response_token)
-                token.save()
-            else:
-                exit("Failed to authorize.")
+        gist_id = GistId().get()
+        token = GithubToken().get()
         # set sessin with token
-        github.login(token.content)
+        github.login(token)
 
         if not self.todo.name:
             name = "NoName"
@@ -273,10 +283,10 @@ class App(object):
             }
         }
 
-        edit_ok = github.edit_gist(gist_id.content, files=files)
+        edit_ok = github.edit_gist(gist_id, files=files)
 
         if edit_ok:
-            print "Pushed to file '" + name + "' at https://gist.github.com/" + gist_id.content
+            print "Pushed to file '" + name + "' at https://gist.github.com/" + gist_id
         else:
             print "Pushed failed."
 
