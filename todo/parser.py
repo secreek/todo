@@ -1,23 +1,25 @@
 # coding=utf8
 
 """
-Parser for todo format string.
+Parser to parse todo format string to todo object.
 """
 
 from models import Task
 from models import Todo
 
+import re
 from ply import lex
 from ply import yacc
 
 
-class TodoLexer(object):
+class Lexer(object):
     """
-    Lexer for Todo format string.
+    Lexer for todo format string
+
     Tokens
       ID        e.g. '1.'
-      DONE      e.g. '(x)'
-      TASK      e.g. 'This is a task'
+      DONE      e.g. '[x]'
+      TASK      e.g. 'This is a sample task'
     """
 
     tokens = (
@@ -26,7 +28,11 @@ class TodoLexer(object):
         "TASK",
     )
 
-    t_ignore = "\x20\x09"  # ignore spaces and tabs
+    t_ignore = "\x20\x09"  # space & tab
+
+    def __init__(self):
+        # the lexer built with instance
+        self.lexer = lex.lex(module=self)
 
     def t_ID(self, t):
         r'\d+\.([uU]|[lL]|[uU][lL]|[lL][uU])?'
@@ -34,11 +40,11 @@ class TodoLexer(object):
         return t
 
     def t_DONE(self, t):
-        r'(\(x\))'
+        r'(\[x\])'
         return t
 
     def t_TASK(self, t):
-        r'((?!\(x\))).+'
+        r'((?!\[x\])).+'
         return t
 
     def t_newline(self, t):
@@ -46,30 +52,26 @@ class TodoLexer(object):
         t.lexer.lineno += len(t.value)
 
     def t_error(self, t):
-        raise SyntaxError(
-            "Illegal character: '%s' at Line %d" % (t.value[0], t.lineno)
-        )
-
-    def __init__(self):
-        self.lexer = lex.lex(module=self)
+        raise SyntaxError("Illegal character '%s' at Line %d" % (t.value[0], t.lineno))
 
 
-class TodoParser(object):
+class Parser(object):
     """
-    Parser for Todo format string, works with a todo lexer.
+    Parser for todo format string, works with a lexer.
 
-    Parse string to Python list
-      todo_str = "1. (x) Write email to tom"
-      TodoParser().parse(todo_str)
+    e.g.
+
+      parser = Parser()
+      parser.parse(string)  # return a todo instance
     """
 
-    tokens = TodoLexer.tokens
+    tokens = Lexer.tokens
+
+    seperator_re = re.compile("\s*-+\s*")
 
     def p_error(self, p):
         if p:
-            raise SyntaxError(
-                "Character '%s' at line %d" % (p.value[0], p.lineno)
-            )
+            raise SyntaxError("Character '%s' at line %d" % (p.value[0], p.lineno))
         else:
             raise SyntaxError("SyntaxError at EOF")
 
@@ -96,17 +98,42 @@ class TodoParser(object):
         elif len(p) == 3:
             done = False
             content = p[2]
+
         task = Task(p[1], content, done)
-        self.todo.append(task)
+        # Note: this not new_task, but a task exist
+        # should be append to list directly
+        self.todo.tasks.append(task)
 
     def __init__(self):
         self.parser = yacc.yacc(module=self, debug=0, write_tables=0)
 
     def parse(self, data):
-        # reset list
-        self.todo = Todo()
-        return self.parser.parse(data)
+        """
+        Parse todo content to todo instance.
+
+        parameter
+          data      str     todo format string
+        """
+        data = data.strip()  # remove empty lines
+
+        lines = data.splitlines()
+        seperator_line = None
+
+        for lineno, line in enumerate(lines):
+            if self.seperator_re.match(line):
+                seperator_line = lineno
+                break  # find the first seperator
+
+        if seperator_line != None:
+            name = "\n".join(lines[:seperator_line]).strip()
+            body = "\n".join(lines[seperator_line + 1:])
+        else:
+            name = None
+            body = "\n".join(lines)
+
+        self.todo = Todo(name=name)  # reset todo instance
+        return self.parser.parse(body)
 
 
-lexer = TodoLexer()  # build lexer
-parser = TodoParser()  # build parser
+lexer = Lexer()
+parser = Parser()

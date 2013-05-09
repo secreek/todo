@@ -43,7 +43,7 @@ Storage
 Well, the storage is readable, sample:
 
 ```
-1. (x) Clean the room
+1. [x] Clean the room
 2.     Go shopping.
 ```
 

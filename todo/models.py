@@ -3,77 +3,89 @@
 
 class Task(object):
     """
-    One task looks like
+    A task looks like
 
-      1. (x) Go shopping
+      1. [x]  Go shopping
 
-    if this task not done, leave there blank.
+    if this task has been done, use '[x]' to mark it.
+    else, leave there blank.
 
-    Attrributes
+    Attributes
       id        int
       content   str
       done      bool
     """
 
-    def __init__(self, _id, content, done=False):
-        self.id = _id
+    def __init__(self, task_id, content, done=False):
+        self.id = task_id
         self.content = content
         self.done = done
 
 
 class TaskNotFound(Exception):
+    """
+    If the asked task not found in given todo, this error will be raised
+    """
     pass
 
 
-class Todo(list):
+class Todo(object):
     """
-    A todo is kind of a list of tasks.
+    A todo is made up of tasks.
+
+    Attributes
+      name    str     todo's name, should be unique in all your todos in your os.
+      tasks   list    tasks in this todo, each of them is an instance of Task
     """
 
-    def __getitem__(self, task_id):
-        """
-        Get task by id.
-        """
-        for task in self:
-            if task.id == task_id:
-                return task
-        raise TaskNotFound
+    def __init__(self, name=None, tasks=[]):
+        # We set default value of argument 'name' as None,
+        # because the name is optional
+        self.name = name
+        self.tasks = tasks
 
     def next_id(self):
         """
-        Return next id should be.
-        """
-        ids = [task.id for task in self]
-        max_id = max(ids) if ids else 0
-        return (max_id + 1)
+        Generate the next id should be.
 
-    def new_task(self, content):
+        For the id of one task is an integer, the id(s) of a todo object will be made up of
+        many integers. We find the max of them, and plus one to it as the next id for new task
         """
-        Append a new undone task to todo
+
+        ids = [task.id for task in self.tasks]
+        max_id = max(ids) if ids else 0  # method `max` broken with empty list
+        return  (max_id + 1)
+
+    def new_task(self, content, done=False):
         """
-        task = Task(self.next_id(), content, False)
-        return self.append(task)
+        Append a new task to todo.
+
+        parameters:
+          content       the content of task
+          done          if the task done(default: False)
+        """
+        task = Task(self.next_id(), content, done)
+        return self.tasks.append(task)
+
+    def get_task(self, task_id):
+        """
+        Get task by its id
+        """
+        for task in self.tasks:
+            if task.id == task_id:
+                return task
+        # Not found
+        raise TaskNotFound
 
     def remove_task(self, task_id):
         """
-        Remove a task by id
+        Remove task by its id
         """
-        self.remove(self[task_id])
-
-    def check_task(self, task_id):
-        """
-        Check task's status to done
-        """
-        self[task_id].done = True
-
-    def undo_task(self, task_id):
-        """
-        Undone some task
-        """
-        self[task_id].done = False
+        task = self.get_task(task_id)
+        return self.tasks.remove(task)
 
     def clear(self):
         """
-        Clear all tasks!
+        Clear tasks list!
         """
-        self[:] = []
+        self.tasks = []

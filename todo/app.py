@@ -1,4 +1,4 @@
-#coding=utf8
+# coding=utf8
 
 """
 Usage:
@@ -20,13 +20,13 @@ Examples:
   Remove a task                 todo 1 remove
 """
 
+__version__ = "0.1.4"
 
 from models import Task
 from models import Todo
 from models import TaskNotFound
 from parser import parser
 from generator import generator
-from version import __version__
 
 from os.path import join
 from os.path import exists
@@ -35,19 +35,24 @@ from termcolor import colored
 from docopt import docopt
 
 
-class TodoApp(object):
+class App(object):
     """
     Todo cli application.
+
+    ::
+        app = App()
+        app.run()
     """
 
     def __init__(self):
-        self.todo = self.parse_from_file()
+        self.todo = self.read()
 
-    def file_path(self):
+    @property
+    def todo_txt(self):
         """
-          todo will use ./todo.txt prior to ~/todo.txt for persistent storage.
+        Use './todo.txt' prior to '~/todo.txt' for persistent storage.
         """
-        fn = "todo.txt"
+        fn = 'todo.txt'
         home_fn = join(expanduser("~"), fn)
         open(home_fn, "a").close()  # touch if not exists
 
@@ -56,94 +61,114 @@ class TodoApp(object):
         else:
             return home_fn
 
-    def parse_from_file(self):
+    def read(self):
         """
-        Read todos from file.
-        return the tasks of "todo.txt".
+        Read from todo.txt, return todo object.
         """
-        content = open(self.file_path()).read()
+        content = open(self.todo_txt).read()
         return parser.parse(content)
 
-    def generate_to_file(self):
+    def write(self):
         """
-        Generate tasks to file.
+        Write this todo to todo.txt
         """
         content = generator.generate(self.todo)
-        open(self.file_path(), "w").write(content)
+        open(self.todo_txt, "w").write(content)
 
-    def sync(func):
+    def sync_to_txt(func):
         """
-        Use decorator to get rid of the duplicate `self.generate_to_file()` call
+        Decorator, write to todo.txt after func()
         """
         def __decorator(self, *args, **kwargs):
             func(self, *args, **kwargs)
-
-            # use self to access `generate_to_file` method
-            self.generate_to_file()
+            self.write()
         return __decorator
 
     def print_task(self, task):
         """
         Print single task to terminal.
         """
-        status = colored('✓', 'green') if task.done else colored('✖', 'red')
+        if task.done:
+            state = colored('✓', 'green')
+        else:
+            state = colored('✖', 'red')
         content = colored(task.content, "blue")
         task_id = colored(str(task.id), "cyan")
-        print task_id + '.' + ' ' + status + '  ' + content
+        print task_id + '.' + ' ' + state + '  ' + content
 
     def print_task_by_id(self, task_id):
         """
-        Print single task by its id.
+        Pringt single task by its id.
         """
-        self.print_task(self.todo[task_id])
+        self.print_task(self.todo.get_task(task_id))
 
+    def print_name(self):
+        """
+        Print todo's name to terminal.
+        """
+        name = generator.gen_name(self.todo.name)
+        print colored(name, "cyan")
+
+    def with_todo_name(func):
+        """
+        Print name to screen at first.
+        """
+        def __decorator(self, *args, **kwargs):
+            self.print_name()
+            return func(self, *args, **kwargs)
+        return __decorator
+
+    @with_todo_name
     def ls_tasks(self):
         """
-        ls all tasks ouput to screen.
+        ls all tasks output to screen
         """
-        for task in self.todo:
+        for task in self.todo.tasks:
             self.print_task(task)
 
+    @with_todo_name
     def ls_undone_tasks(self):
         """
-        ls all undone tasks
+        ls all undone tasks.
         """
-        for task in self.todo:
+        for task in self.todo.tasks:
             if not task.done:
                 self.print_task(task)
 
-    @sync
+    @sync_to_txt
     def check_task(self, task_id):
         """
-        Check one task to done.
+        check one task to done.
         """
-        self.todo.check_task(task_id)
+        task = self.todo.get_task(task_id)
+        task.done = True
 
-    @sync
+    @sync_to_txt
     def undo_task(self, task_id):
         """
-        Check one task to undone.
+        check one task to undone.
         """
-        self.todo.undo_task(task_id)
+        task = self.todo.get_task(task_id)
+        task.done = False
 
-    @sync
+    @sync_to_txt
     def clear_tasks(self):
         """
-        Clear todo!
+        Clear all tasks.
         """
         self.todo.clear()
 
-    @sync
+    @sync_to_txt
     def add_task(self, content):
         """
-        Add new task.
+        Add a new task
         """
         self.todo.new_task(content)
 
-    @sync
+    @sync_to_txt
     def remove_task(self, task_id):
         """
-        Remove task from todo by its id
+        Remove task from list
         """
         self.todo.remove_task(task_id)
 
@@ -152,7 +177,7 @@ class TodoApp(object):
         Get arguments from cli and run!
         """
 
-        args = docopt(__doc__, version="Version: " + __version__)
+        args = docopt(__doc__, version="todo version: " + __version__)
 
         if args["clear"]:
             self.clear_tasks()
@@ -171,7 +196,7 @@ class TodoApp(object):
                 # if not an integer format str, use as a task
                 self.add_task(args["<id>"])
             except TaskNotFound:
-                print colored("Task Not Found.", "red")
+                print colored("No task at id '" + str(task_id) + "'.", "red")
         elif args["<task>"]:
             self.add_task(" ".join(args["<task>"]))
         elif args["--all"]:
@@ -182,11 +207,10 @@ class TodoApp(object):
 
 def main():
     """
-    Run todo cli script.
+    Run todo in cli
     """
-    app = TodoApp()
+    app = App()
     app.run()
-
 
 if __name__ == '__main__':
     main()

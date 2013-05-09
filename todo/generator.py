@@ -1,53 +1,76 @@
 # coding=utf8
 
 """
-Generator from todo to todo format string.
+Generator from todo object to todo format string
 """
 
 from models import Task
 from models import Todo
 
 
-class TodoGenerator(object):
+class Generator(object):
     """
-    Generator from python list to string.
+    Generator from todo object to readable string.
     """
 
-    g_newline = "\n"
+    newline = "\n"
 
-    def g_id(self, v):
-        return str(v) + "."
+    def gen_task_id(self, task_id):
+        """
+        int => str      e.g.  12 => '12.'
+        """
+        return str(task_id) + "."
 
-    def g_done(self, v):
-        if v is True:
-            return '(x)'
+    def gen_task_done(self, done):
+        """
+        boolen => str   e.g.  True => '[x]'
+        """
+        if done is True:
+            return '[x]'
         else:
             return '   '
 
-    def g_task(self, v):
-        return v
+    def gen_task_content(self, content):
+        """
+        str => str
+        """
+        return content
+
+    def gen_name(self, name):
+        """
+        str => str      e.g.  'name' => 'name\n------'
+        """
+        if name:
+            return name + self.newline +  '-' * len(name)
+        else:
+            return ""
 
     def gen_task(self, task):
+        """
+        Task => str
+        e.g.    Task(1, "Write email", True) => '1. [x]  Write email'
+        """
         lst = []
-        lst.append(self.g_id(task.id))
-        lst.append(self.g_done(task.done))
-        lst.append(self.g_task(task.content))
+        lst.append(self.gen_task_id(task.id))
+        lst.append(self.gen_task_done(task.done))
+        lst.append(self.gen_task_content(task.content))
         return " ".join(lst)
 
     def generate(self, todo):
         """
-        Generate todo to string format.
+        Generate todo object to string.
 
-        e.g.
-          [<task object>, ..] => "1. (x) do something .."
+        e.g.  Todo(name, tasks) => "1. (x) do something..."
         """
-        re = []
-        for i in todo:
-            if isinstance(i, Task):
-                re.append(self.gen_task(i))
-            else:
-                raise SyntaxError('Not support type: ' + type(i))
-        return self.g_newline.join(re)
+        lst = []
+
+        head = self.gen_name(todo.name)
+        lst.append(head)
+
+        for task in todo.tasks:
+            lst.append(self.gen_task(task))
+
+        return self.newline.join(lst)
 
 
-generator = TodoGenerator()  # build generator
+generator = Generator()  # build generator

@@ -1,4 +1,7 @@
-1. (x) Review the codes.
-2. (x) PEP8 check
+Todo's name
+-----------
+1. [x] Review the codes.
+2. [x] PEP8 check
 3.     Andriod Platform?
-4.     The todo class
+4.     Rebuild the codes(Design todo class, No More be a subclass of list, but new an attribute tasks to store tasks)
+5.     Design the id generate rule, need to check if the ids from file valid? or We just dont use numbered id, instead a '-'
