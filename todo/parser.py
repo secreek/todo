@@ -7,6 +7,7 @@ Parser to parse todo format string to todo object.
 from models import Task
 from models import Todo
 
+import re
 from ply import lex
 from ply import yacc
 
@@ -66,6 +67,8 @@ class Parser(object):
 
     tokens = Lexer.tokens
 
+    seperator_re = re.compile("\s*-+\s*")
+
     def p_error(self, p):
         if p:
             raise SyntaxError("Character '%s' at line %d" % (p.value[0], p.lineno))
@@ -111,10 +114,25 @@ class Parser(object):
         parameter
           data      str     todo format string
         """
-        # TODO: Parse data's head(name) first
-        # And then split it to get its body, let yacc parse its body
-        self.todo = Todo()  # reset todo instance
-        return self.parser.parse(data)
+        data = data.strip()  # remove empty lines
+
+        lines = data.splitlines()
+        seperator_line = None
+
+        for lineno, line in enumerate(lines):
+            if self.seperator_re.match(line):
+                seperator_line = lineno
+                break  # find the first seperator
+
+        if seperator_line != None:
+            name = "\n".join(lines[:seperator_line]).strip()
+            body = "\n".join(lines[seperator_line + 1:])
+        else:
+            name = None
+            body = "\n".join(lines)
+
+        self.todo = Todo(name=name)  # reset todo instance
+        return self.parser.parse(body)
 
 
 lexer = Lexer()
