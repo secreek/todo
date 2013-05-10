@@ -22,13 +22,18 @@ Examples:
   Print all tasks               todo --all
   Print undone tasks            todo
   Remove a task                 todo 1 remove
+  Rename the todo               todo name <a-new-name>
+  Get the name of todo          todo name
   Push to gist.github.com       todo push
   Pull todo from gist           todo pull my_todo
   Set gist's id                 todo gist_id xxxxx
   Get gist's id                 todo gist_id
+
+You can edit the todo.txt directly.
+
 """
 
-__version__ = "0.1.4"
+__version__ = "0.1.5"
 
 from models import Task
 from models import Todo
@@ -39,14 +44,14 @@ from generator import generator
 from utils import log
 from utils import ask_input
 
-import requests
 from os import mkdir
 from os.path import join
 from os.path import exists
 from os.path import expanduser
+
+import requests
 from termcolor import colored
 from docopt import docopt
-
 
 home = expanduser("~")  # "/home/username/"
 
@@ -56,49 +61,34 @@ class TodoTxt(object):
     Object to manage todo.txt.
 
     attributes
-      filepath      str     todo.txt's filepath
-
-    methods
-      read          read content from todo.txt and return todo object
-      write         generate string from todo object and write it to todo.txt
+      path      str     todo.txt's filepath
     """
 
     def __init__(self):
         """
         Use './todo.txt' prior to '~/todo.txt' for persistent storage.
         """
-
         fn = "todo.txt"
 
         if exists(fn):
-            self.filepath = fn
+            self.path = fn
         else:
             home_todo_txt = join(home, fn)
             open(home_todo_txt, "a").close()  # touch it if not exists
-            self.filepath = home_todo_txt
+            self.path = home_todo_txt
 
     def read(self):
         """
-        Read todo.txt's content and return a dict contains todo object and file's content.
-
-        return
-          dict      e.g. {"todo": <Todo object>, "content": <str>}
+        Read todo.txt's content.
         """
 
-        content = open(self.filepath).read()
+        return open(self.path).read().strip()
 
-        dct = {
-            "todo": parser.parse(content),
-            "content": content
-        }
-        return dct
-
-    def write(self, todo):
+    def write(self, content):
         """
-        Generate todo object to string and write the string to file.
+        Write string to todo.txt
         """
-        content = generator.generate(todo)
-        return open(self.filepath, "w").write(content)
+        return open(self.path, "w").write(content)
 
 
 class Gist(object):
@@ -106,9 +96,9 @@ class Gist(object):
     Parent class for GistId and GithubToken
 
     attributes
-      todo_dir      str     the path for directory ".todo", like "/home/user/.todo"
-      content       str     the content of file "~/.todo/gist_id" or "~/.todo/token"
-      path          str     the path for this file ('.todo/gist_id' or '.todo/token')
+      todo_dir      str     the path of directory ".todo"
+      content       str     the content of the file
+      path          str     the path of the file
 
     methods
       read          read from file(gist_id or token) and return its content
@@ -178,7 +168,8 @@ class GithubToken(Gist):
         what the get() does:
           1) read from "~/.todo/token"
           2) check if the token read is empty.
-             (yes)-> 1) if empty, ask user for username and password to access api.github.com
+             (yes)-> 1) if empty,
+                        ask user for user&passwd to access api.github.com
                       2) fetch the token, set to this instance and store it.
           3) return the token (a string)
         """
@@ -186,17 +177,17 @@ class GithubToken(Gist):
         if self.is_empty:
             user = ask_input.text("Github user:")
             password = ask_input.password("Password for %s:" % user)
-            # authorize user to github.com
+
             log.info("Authorize to github.com..")
             response_token = Github().authorize(user, password)
 
             if response_token:
-                log.ok("Authorized success.")
                 # response 200(ok)
+                log.ok("Authorized success.")
                 self.set(response_token)
                 self.save()
             else:
-                log.error("Failed to authorize.status_code")
+                log.error("Failed to authorize")
         return self.content
 
 
@@ -225,10 +216,11 @@ class GistId(Gist):
           1) read the gist_id from file "~/.todo/gist_id"
           2) check if the gist_id if empty
              (yes)-> 1) if the gist_id is empty, ask user to input it.
-                     2) set the instance's content as the gist_id and save it to disk.
+                     2) set the instance's content the new one and save it.
           3) return the gist_id
         """
         self.read()
+
         if self.is_empty:
             self.set(ask_input.text("Gist id:"))
             self.save()
@@ -245,9 +237,8 @@ class App(object):
     """
     def __init__(self):
         self.todo_txt = TodoTxt()
-        dct = self.todo_txt.read()
-        self.todo = dct["todo"]
-        self.txt_content = dct["content"]
+        self.txt_content = self.todo_txt.read()
+        self.todo = parser.parse(self.txt_content)
 
     def write_to_txt(func):
         """
@@ -255,7 +246,8 @@ class App(object):
         """
         def __decorator(self, *args, **kwargs):
             func(self, *args, **kwargs)
-            self.todo_txt.write(self.todo)
+            content = generator.generate(self.todo)
+            self.todo_txt.write(content)
         return __decorator
 
     def print_task(self, task):
@@ -280,9 +272,7 @@ class App(object):
         """
         Print todo's name, without "----"
         """
-        name = self.todo.name
-        if name:
-            print colored(name, "cyan")
+        print colored(self.todo.name, "cyan")
 
     def with_todo_name(func):
         """
@@ -397,7 +387,9 @@ class App(object):
             }
         }
 
-        log.info("Pushing '%s' to https://gist.github.com/%s .." % (name, gist_id))
+        log.info(
+            "Pushing '%s' to https://gist.github.com/%s .." % (name, gist_id)
+        )
         edit_ok = github.edit_gist(gist_id, files=files)
 
         if edit_ok:
@@ -412,7 +404,10 @@ class App(object):
         """
 
         if not name:  # if not name figured out
-            name = self.todo.name  # use the todo.txt's name
+            if self.todo.name:
+                name = self.todo.name  # use the todo.txt's name
+            else:
+                log.error("Please tell me todo's name to pull.")
 
         github = Github()
         gist_id = GistId().get()
@@ -430,7 +425,9 @@ class App(object):
         response = requests.get(url)
 
         if response.status_code == 200:
-            print response.text
+            todo_content = response.text.encode("utf8")
+            self.todo_txt.write(todo_content)
+            log.ok("Pulled success to file '%s'" % self.todo_txt.path)
         else:
             log.error("Failed to pull file from %s" % url)
 

@@ -41,8 +41,8 @@ class Todo(object):
       tasks   list    tasks in this todo, each of them is an instance of Task
     """
 
-    def __init__(self, name=None, tasks=[]):
-        # We set default value of argument 'name' as None,
+    def __init__(self, name="", tasks=[]):
+        # We set default value of argument 'name' as "",
         # because the name is optional
         self.name = name
         self.tasks = tasks
