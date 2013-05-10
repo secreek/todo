@@ -30,6 +30,7 @@ from models import TaskNotFound
 from models import Github
 from parser import parser
 from generator import generator
+from utils import ask_input
 
 from os import mkdir
 from os.path import join
@@ -37,18 +38,28 @@ from os.path import exists
 from os.path import expanduser
 from termcolor import colored
 from docopt import docopt
-from getpass import getpass
 
 
-home = expanduser("~")  # home path "~" => "/home/username/"
+home = expanduser("~")  # "/home/username/"
 
 
 class TodoTxt(object):
     """
-    Use './todo.txt' prior to '~/todo.txt' for persistent storage.
+    Object to manage todo.txt.
+
+    attributes
+      filepath      str     todo.txt's filepath
+
+    methods
+      read          read content from todo.txt and return todo object
+      write         generate string from todo object and write it to todo.txt
     """
 
     def __init__(self):
+        """
+        Use './todo.txt' prior to '~/todo.txt' for persistent storage.
+        """
+
         fn = "todo.txt"
 
         if exists(fn):
@@ -60,9 +71,14 @@ class TodoTxt(object):
 
     def read(self):
         """
-        Return todo object.
+        Read todo.txt's content and return a dict contains todo object and file's content.
+
+        return
+          dict      e.g. {"todo": <Todo object>, "content": <str>}
         """
+
         content = open(self.filepath).read()
+
         dct = {
             "todo": parser.parse(content),
             "content": content
@@ -71,41 +87,74 @@ class TodoTxt(object):
 
     def write(self, todo):
         """
-        Write todo object to file.
+        Generate todo object to string and write the string to file.
         """
         content = generator.generate(todo)
-        open(self.filepath, "w").write(content)
+        return open(self.filepath, "w").write(content)
 
 
 class Gist(object):
+    """
+    Parent class for GistId and GithubToken
+
+    attributes
+      todo_dir      str     the path for directory ".todo", like "/home/user/.todo"
+      content       str     the content of file "~/.todo/gist_id" or "~/.todo/token"
+      path          str     the path for this file ('.todo/gist_id' or '.todo/token')
+
+    methods
+      read          read from file(gist_id or token) and return its content
+      save          save the content to file(..)
+
+    """
 
     def __init__(self):
-        """
-        mkdir ~/.todo if not exists
-        """
         self.todo_dir = join(home, ".todo")
         self.content = None
+        self.path = None
+        # mkdir ~/.todo if not exists
         if not exists(self.todo_dir):
             mkdir(self.todo_dir)
 
     def read(self):
+        """
+        return file's content
+        """
         if exists(self.path):
             self.content = open(self.path).read().strip()
             return self.content
         return None
 
     def save(self):
+        """
+        save the file's content.
+        """
         return open(self.path, "w").write(self.content.strip())
 
     def set(self, content):
+        """
+        set the file's content a new value
+        """
         self.content = content
 
     @property
     def is_empty(self):
+        """
+        If the content is empty, return True, else False
+        """
         return not self.content
 
 
 class GithubToken(Gist):
+    """
+    Github's access_token object.
+
+    attributes
+      path          str     its filepath in the os
+
+    methods
+      get           Get a token anyway.
+    """
 
     def __init__(self):
         super(GithubToken, self).__init__()
@@ -113,17 +162,25 @@ class GithubToken(Gist):
 
     def get(self):
         """
-        If exists, use it.
-        else, authorize and save it to file.
+        call this method to get a token::
+          token = GithubToken().get()
+
+        what the get() does:
+          1) read from "~/.todo/token"
+          2) check if the token read is empty.
+             (yes)-> 1) if empty, ask user for username and password to access api.github.com
+                      2) fetch the token, set to this instance and store it.
+          3) return the token (a string)
         """
         self.read()
         if self.is_empty:
-            user = raw_input("Github user:")
-            password = getpass("Password for %s:" % user)
+            user = ask_input.text("Github user:")
+            password = ask_input.password("Password for %s:" % user)
+            # authorize user to github.com
             response_token = Github().authorize(user, password)
 
             if response_token:
-                # if response 200(ok)
+                # response 200(ok)
                 self.set(response_token)
                 self.save()
                 print "Authorized success, token stored in %s" % self.path
@@ -133,6 +190,15 @@ class GithubToken(Gist):
 
 
 class GistId(Gist):
+    """
+    Gist id object.
+
+    attributes
+      path      str     the path of ".todo/gist_id" in the os
+
+    methods
+      get           get a gist_id anyway.
+    """
 
     def __init__(self):
         super(GistId, self).__init__()
@@ -140,13 +206,18 @@ class GistId(Gist):
 
     def get(self):
         """
-        Get gist id any way.
-        if exists and not empty, use it
-        else, ask user to input one, and save it to file.
+        call this method to get a gist_id::
+            gist_id = GistId().get()
+        what the get() dose:
+          1) read the gist_id from file "~/.todo/gist_id"
+          2) check if the gist_id if empty
+             (yes)-> 1) if the gist_id is empty, ask user to input it.
+                     2) set the instance's content as the gist_id and save it to disk.
+          3) return the gist_id
         """
         self.read()
         if self.is_empty:
-            self.set(raw_input("Gist id:"))
+            self.set(ask_input.text("Gist id:"))
             self.save()
             print "Gist id stored in %s" % self.path
         return self.content
@@ -271,6 +342,7 @@ class App(object):
         github = Github()
         gist_id = GistId().get()
         token = GithubToken().get()
+        print "Pushing to gist.github.com.."
         # set sessin with token
         github.login(token)
 

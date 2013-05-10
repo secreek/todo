@@ -8,3 +8,4 @@ For tests
 7.     github's 401 error is to say that your token is out of date
 8.     rebuild the push and pull, rebuild the GithubToken class and GistId class
 9. [x] Add messages output if auth success or login success.
+10. [x] loop ask user for pass and usernname and gist_id

@@ -13,7 +13,7 @@ class Task(object):
     if this task has been done, use '[x]' to mark it.
     else, leave there blank.
 
-    Attributes
+    attributes
       id        int
       content   str
       done      bool
@@ -36,7 +36,7 @@ class Todo(object):
     """
     A todo is made up of tasks.
 
-    Attributes
+    attributes
       name    str     todo's name, should be unique in all your todos in your os.
       tasks   list    tasks in this todo, each of them is an instance of Task
     """
