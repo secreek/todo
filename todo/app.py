@@ -340,6 +340,26 @@ class App(object):
         """
         self.todo.remove_task(task_id)
 
+    def internet_error_handle(func):
+        """
+        This decorator checks internet error.
+        """
+        def wrapper(self, *args, **kwargs):
+            try:
+                func(self, *args, **kwargs)
+            except requests.exceptions.ConnectionError:
+                log.error("internet connection error.")
+            except requests.exceptions.HTTPError:
+                log.error("invalid HTTP response")
+            except requests.exceptions.Timeout:
+                log.error("time out.")
+            except requests.exceptions.TooManyRedirects:
+                log.error("too many redirects")
+            except Exception, e:
+                raise e
+        return wrapper
+
+    @internet_error_handle
     def push(self):
         """
         Push todo to gist.github.com
@@ -370,6 +390,7 @@ class App(object):
         else:
             log.error("Pushed failed.")
 
+    @internet_error_handle
     def pull(self, name=None):
         """
         Pull todo from remote gist server.
