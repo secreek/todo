@@ -4,6 +4,7 @@
 Usage:
   todo [-h|-v|-a]
   todo push
+  todo pull
   todo clear
   todo (<id> [done|undone|remove])|<task>...
 
@@ -30,8 +31,10 @@ from models import TaskNotFound
 from models import Github
 from parser import parser
 from generator import generator
+from utils import log
 from utils import ask_input
 
+import requests
 from os import mkdir
 from os.path import join
 from os.path import exists
@@ -177,15 +180,17 @@ class GithubToken(Gist):
             user = ask_input.text("Github user:")
             password = ask_input.password("Password for %s:" % user)
             # authorize user to github.com
+            log.info("Authorize to github.com..")
             response_token = Github().authorize(user, password)
 
             if response_token:
                 # response 200(ok)
                 self.set(response_token)
                 self.save()
-                print "Authorized success, token stored in %s" % self.path
+                log.ok("Authorized success.")
+                log.info("Access_token stored in %s" % self.path)
             else:
-                exit("Failed to authorize.")
+                log.error("Failed to authorize.status_code")
         return self.content
 
 
@@ -219,7 +224,7 @@ class GistId(Gist):
         if self.is_empty:
             self.set(ask_input.text("Gist id:"))
             self.save()
-            print "Gist id stored in %s" % self.path
+            log.ok("Gist id stored in %s" % self.path)
         return self.content
 
 
@@ -342,8 +347,8 @@ class App(object):
         github = Github()
         gist_id = GistId().get()
         token = GithubToken().get()
-        print "Pushing to gist.github.com.."
         # set sessin with token
+
         github.login(token)
 
         if not self.todo.name:
@@ -357,18 +362,41 @@ class App(object):
             }
         }
 
+        log.info("Pushing %s to https://gist.github.com/%s .." % (name, gist_id))
         edit_ok = github.edit_gist(gist_id, files=files)
 
         if edit_ok:
-            print "Pushed to file '" + name + "' at https://gist.github.com/" + gist_id
+            log.ok("Pushed to file '" + name + "' at https://gist.github.com/" + gist_id)
         else:
-            print "Pushed failed."
+            log.error("Pushed failed.")
 
-    def pull(self):
+    def pull(self, name=None):
         """
         Pull todo from remote gist server.
         """
-        pass
+
+        if not name:  # if not name figured out
+            name = self.todo.name  # use the todo.txt's name
+
+        github = Github()
+        gist_id = GistId().get()
+
+        dct = github.get_gist(gist_id)
+
+        if not dct:
+            log.error("Failed to pull gist.")
+
+        if name not in dct["files"]:
+            log.error("File " + name + "not in gist: " + gist_id )
+
+        url = dct["files"][name]["raw_url"]
+
+        response = requests.get(url)
+
+        if response.status_code == 200:
+            print response.text
+        else:
+            log.error("Failed to pull file from url " + url)
 
 
     def run(self):
@@ -379,8 +407,10 @@ class App(object):
 
         if args["clear"]:
             self.clear_tasks()
-        if args["push"]:
+        elif args["push"]:
             self.push()
+        elif args["pull"]:
+            self.pull()
         elif args["<id>"]:
             try:
                 task_id = int(args["<id>"])
@@ -396,7 +426,7 @@ class App(object):
                 # if not an integer format str, use as a task
                 self.add_task(args["<id>"])
             except TaskNotFound:
-                print colored("No task at id '" + str(task_id) + "'.", "red")
+                log.error("No task at id '" + str(task_id) + "'.")
         elif args["<task>"]:
             self.add_task(" ".join(args["<task>"]))
         elif args["--all"]:
