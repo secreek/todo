@@ -1,7 +1,15 @@
-Todo's name
------------
+newname
+-------
 1. [x] Review the codes.
 2. [x] PEP8 check
 3.     Andriod Platform?
-4.     Rebuild the codes(Design todo class, No More be a subclass of list, but new an attribute tasks to store tasks)
-5.     Design the id generate rule, need to check if the ids from file valid? or We just dont use numbered id, instead a '-'
+4. [x] Rebuild the codes(Design todo class, No More be a subclass of list, but new an attribute tasks to store tasks)
+5. [x] Design the id generate rule, need to check if the ids from file valid? or We just dont use numbered id, instead a '-'
+7. [x] github's 401 error is to say that your token is out of date
+8. [x] rebuild the push and pull, rebuild the GithubToken class and GistId class
+9. [x] Add messages output if auth success or login success.
+10. [x] loop ask user for pass and usernname and gist_id
+11. [x] add cli to set gist_id
+12. [x] tell user why he or she cant login to github.com or cant edit the gist
+13.     is there any good way to not try except the connectionerror,just raise it?
+14.     review the codes

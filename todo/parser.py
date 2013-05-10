@@ -128,7 +128,7 @@ class Parser(object):
             name = "\n".join(lines[:seperator_line]).strip()
             body = "\n".join(lines[seperator_line + 1:])
         else:
-            name = None
+            name = ""
             body = "\n".join(lines)
 
         self.todo = Todo(name=name)  # reset todo instance

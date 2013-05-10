@@ -42,8 +42,6 @@ class Generator(object):
         """
         if name:
             return name + self.newline +  '-' * len(name)
-        else:
-            return ""
 
     def gen_task(self, task):
         """
@@ -65,7 +63,9 @@ class Generator(object):
         lst = []
 
         head = self.gen_name(todo.name)
-        lst.append(head)
+
+        if head:
+            lst.append(head)
 
         for task in todo.tasks:
             lst.append(self.gen_task(task))
