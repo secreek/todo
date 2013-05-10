@@ -123,18 +123,13 @@ class Gist(object):
             return self.content
         return None
 
-    def save(self):
+    def save(self, content):
         """
-        save the file's content.
-        """
-        open(self.path, "w").write(self.content.strip())
-        log.info("%s stored in %s" % (self.name, self.path))
-
-    def set(self, content):
-        """
-        set the file's content a new value
+        save the content to file
         """
         self.content = content
+        open(self.path, "w").write(self.content.strip())
+        log.info("%s stored in %s" % (self.name, self.path))
 
     @property
     def is_empty(self):
@@ -159,6 +154,7 @@ class GithubToken(Gist):
         super(GithubToken, self).__init__()
         self.name = "github_token"
         self.path = join(self.todo_dir, self.name)
+        self.read()  # must read after know his path
 
     def get(self):
         """
@@ -173,21 +169,21 @@ class GithubToken(Gist):
                       2) fetch the token, set to this instance and store it.
           3) return the token (a string)
         """
-        self.read()
         if self.is_empty:
             user = ask_input.text("Github user:")
             password = ask_input.password("Password for %s:" % user)
 
             log.info("Authorize to github.com..")
-            response_token = Github().authorize(user, password)
+            response = Github().authorize(user, password)
 
-            if response_token:
-                # response 200(ok)
+            if response.status_code == 201:
+                # 201 created
                 log.ok("Authorized success.")
-                self.set(response_token)
-                self.save()
+                # get token from dict
+                token = response.json()["token"]
+                self.save(token)
             else:
-                log.error("Failed to authorize")
+                log.error("Failed to authorize. status code: %s" % str(response.status_code))
         return self.content
 
 
@@ -207,6 +203,7 @@ class GistId(Gist):
         super(GistId, self).__init__()
         self.name = "gist_id"
         self.path = join(self.todo_dir, self.name)
+        self.read()  # must read after know his path
 
     def get(self):
         """
@@ -216,14 +213,12 @@ class GistId(Gist):
           1) read the gist_id from file "~/.todo/gist_id"
           2) check if the gist_id if empty
              (yes)-> 1) if the gist_id is empty, ask user to input it.
-                     2) set the instance's content the new one and save it.
+                     2) save the new gist_id
           3) return the gist_id
         """
-        self.read()
 
         if self.is_empty:
-            self.set(ask_input.text("Gist id:"))
-            self.save()
+            self.save(ask_input.text("Gist id:"))
         return self.content
 
 
@@ -272,7 +267,8 @@ class App(object):
         """
         Print todo's name, without "----"
         """
-        print colored(self.todo.name, "cyan")
+        if self.todo.name:
+            print colored(self.todo.name, "cyan")
 
     def with_todo_name(func):
         """
@@ -280,7 +276,8 @@ class App(object):
         """
         def __decorator(self, *args, **kwargs):
             self.print_todo_name()
-            print colored("-" * len(self.todo.name), "cyan")
+            if self.todo.name:
+                print colored("-" * len(self.todo.name), "cyan")
             return func(self, *args, **kwargs)
         return __decorator
 
@@ -345,26 +342,6 @@ class App(object):
         """
         self.todo.remove_task(task_id)
 
-    def internet_error_handle(func):
-        """
-        This decorator checks internet error.
-        """
-        def wrapper(self, *args, **kwargs):
-            try:
-                func(self, *args, **kwargs)
-            except requests.exceptions.ConnectionError:
-                log.error("internet connection error.")
-            except requests.exceptions.HTTPError:
-                log.error("invalid HTTP response")
-            except requests.exceptions.Timeout:
-                log.error("time out.")
-            except requests.exceptions.TooManyRedirects:
-                log.error("too many redirects")
-            except Exception, e:
-                raise e
-        return wrapper
-
-    @internet_error_handle
     def push(self):
         """
         Push todo to gist.github.com
@@ -372,7 +349,6 @@ class App(object):
         github = Github()
         gist_id = GistId().get()
         token = GithubToken().get()
-        # set sessin with token
 
         github.login(token)
 
@@ -390,14 +366,17 @@ class App(object):
         log.info(
             "Pushing '%s' to https://gist.github.com/%s .." % (name, gist_id)
         )
-        edit_ok = github.edit_gist(gist_id, files=files)
+        response = github.edit_gist(gist_id, files=files)
 
-        if edit_ok:
+        if response.status_code == 200:
             log.ok("Pushed success.")
+        elif response.status_code == 401:
+            log.warning("Github token is out of date")
+            GithubToken().save('')  # empty the token!
+            self.push()  # and repush
         else:
             log.error("Pushed failed.")
 
-    @internet_error_handle
     def pull(self, name=None):
         """
         Pull todo from remote gist server.
@@ -412,10 +391,12 @@ class App(object):
         github = Github()
         gist_id = GistId().get()
 
-        dct = github.get_gist(gist_id)
+        resp = github.get_gist(gist_id)
 
-        if not dct:
-            log.error("Failed to pull gist.")
+        if resp.status_code != 200:
+            log.error("Failed to pull gist, status code: %s" % resp.status_code)
+
+        dct = resp.json()  # get out the data
 
         if name not in dct["files"]:
             log.error("File '%s' not in gist: %s" % (name, gist_id))
@@ -436,15 +417,14 @@ class App(object):
         set gist_id
         """
         gist_id = GistId()
-        gist_id.set(new_gist_id)
-        gist_id.save()
+        gist_id.save(new_gist_id.strip())
 
     def get_gist_id(self):
         """
         print gist_id to user
         """
         gist_id = GistId()
-        gist_id.read()
+
         if not gist_id.is_empty:
             print gist_id.content
 

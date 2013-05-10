@@ -131,7 +131,7 @@ class Github(object):
     def authorize(self, login, password):
         """
         Fetch access_token from github.com using username & password.
-        if success, return token(a string). else return None
+        return the response object
         """
         self.session.auth = (login, password)
         data = dict(
@@ -144,12 +144,7 @@ class Github(object):
 
         data_json = json.dumps(data)
         headers = {'content-type': 'application/json'}
-        r = self.session.post("https://api.github.com/authorizations", data=data_json, headers=headers)
-        if r.status_code == 201:
-            token = r.json()["token"]
-            return token
-        else:
-            return None
+        return self.session.post("https://api.github.com/authorizations", data=data_json, headers=headers)
 
     def login(self, token):
         """
@@ -160,34 +155,34 @@ class Github(object):
     def edit_gist(self, gist_id, files={}, description=""):
         """
         Edit a gist, require auth.
-        If edit successfully, return True, else False
 
         parameters
           gist_id       str      gist's id
           files         dict     {file_name:{"content":"xxxx", "filename":"xxxxx"}}
           description   str      gist's description
 
-        return boolen
+        return response
         """
         data = dict(
             files=files,
             description=description
         )
         response = self.session.patch("https://api.github.com/gists/" + gist_id, data=json.dumps(data))
-        return response.status_code == 200
+        return response
 
     def get_gist(self, gist_id):
         """
-        Fetch a single gist down, return dict.
+        Fetch a single gist down, return response.
+
+        ::
+            resp = get_gist("xxx")
+            dct = resp.json()
 
         To get some certain file's raw_url::
-            return["files"]["filename"]["raw_url"]
+            dct["files"]["filename"]["raw_url"]
 
         To fetch content of gist's file::
            r = requests.get(file_raw_url)
            print r.text
         """
-        re = self.session.get("https://api.github.com/gists/" + gist_id)
-        if re.status_code == requests.codes.ok:
-            return re.json()
-        return None
+        return self.session.get("https://api.github.com/gists/" + gist_id)
