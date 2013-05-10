@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name="todo",
-    version="0.2.0",
+    version="0.2.1",
     author="hit9",
     author_email="nz2324@126.com",
     description="""

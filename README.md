@@ -10,13 +10,13 @@ Install
 -------
 
 
-latest version: [v0.2.0](https://github.com/secreek/todo/tree/v0.2.0)
+latest version: [v0.2.1](https://github.com/secreek/todo/tree/v0.2.0)
 
 offline version(No `gist` support): [v0.1.4](https://github.com/secreek/todo/tree/v0.1.4)
 
 Use pip to install it from github.com:
 
-    [sudo] pip install git+git://github.com/secreek/todo.git@v0.2.0
+    [sudo] pip install git+git://github.com/secreek/todo.git@v0.2.1
 
 Usage
 ------
