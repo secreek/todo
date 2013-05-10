@@ -14,7 +14,7 @@ latest version: [v0.2.0](https://github.com/secreek/todo/tree/v0.2.0)
 
 offline version(No `gist` support): [v0.1.4](https://github.com/secreek/todo/tree/v0.1.4)
 
-Use pip install from git
+Use pip to install it from github.com:
 
     [sudo] pip install git+git://github.com/secreek/todo.git@v0.2.0
 
@@ -90,8 +90,7 @@ As the gist is git powered in the backend, we can review the history versions of
 The mapping schema from local os to remote server:
 
 ```
-the local           the remote
-todo.txt => gist.github.com/gist_id 's file {todo.name}
+{local: todo.txt} => {remote: gist.github.com/gist_id, file: todo.name}
 ```
 
 Well the gist_id & github's token is stored in `~/.todo/`. `todo` only asks you once for `login` and `password`(to get token).
