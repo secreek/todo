@@ -3,9 +3,11 @@
 """
 Usage:
   todo [-h|-v|-a]
-  todo push
-  todo pull
   todo clear
+  todo push
+  todo pull [<name>]
+  todo name [<new_name>]
+  todo gist_id [<new_gist_id>]
   todo (<id> [done|undone|remove])|<task>...
 
 Options:
@@ -21,6 +23,9 @@ Examples:
   Print undone tasks            todo
   Remove a task                 todo 1 remove
   Push to gist.github.com       todo push
+  Pull todo from gist           todo pull my_todo
+  Set gist's id                 todo gist_id xxxxx
+  Get gist's id                 todo gist_id
 """
 
 __version__ = "0.1.4"
@@ -132,7 +137,8 @@ class Gist(object):
         """
         save the file's content.
         """
-        return open(self.path, "w").write(self.content.strip())
+        open(self.path, "w").write(self.content.strip())
+        log.info("%s stored in %s" % (self.name, self.path))
 
     def set(self, content):
         """
@@ -161,7 +167,8 @@ class GithubToken(Gist):
 
     def __init__(self):
         super(GithubToken, self).__init__()
-        self.path = join(self.todo_dir, "token")
+        self.name = "github_token"
+        self.path = join(self.todo_dir, self.name)
 
     def get(self):
         """
@@ -184,11 +191,10 @@ class GithubToken(Gist):
             response_token = Github().authorize(user, password)
 
             if response_token:
+                log.ok("Authorized success.")
                 # response 200(ok)
                 self.set(response_token)
                 self.save()
-                log.ok("Authorized success.")
-                log.info("Access_token stored in %s" % self.path)
             else:
                 log.error("Failed to authorize.status_code")
         return self.content
@@ -199,6 +205,7 @@ class GistId(Gist):
     Gist id object.
 
     attributes
+      name      str
       path      str     the path of ".todo/gist_id" in the os
 
     methods
@@ -207,7 +214,8 @@ class GistId(Gist):
 
     def __init__(self):
         super(GistId, self).__init__()
-        self.path = join(self.todo_dir, "gist_id")
+        self.name = "gist_id"
+        self.path = join(self.todo_dir, self.name)
 
     def get(self):
         """
@@ -224,7 +232,6 @@ class GistId(Gist):
         if self.is_empty:
             self.set(ask_input.text("Gist id:"))
             self.save()
-            log.ok("Gist id stored in %s" % self.path)
         return self.content
 
 
@@ -260,7 +267,7 @@ class App(object):
         else:
             state = colored("✖", "red")
         content = colored(task.content, "blue")
-        task_id = colored(str(task.id))
+        task_id = colored(str(task.id), "cyan")
         print task_id + "." + " " + state + "  " + content
 
     def print_task_by_id(self, task_id):
@@ -271,20 +278,28 @@ class App(object):
 
     def print_todo_name(self):
         """
-        Print todo's name
+        Print todo's name, without "----"
         """
-        name = generator.gen_name(self.todo.name)
+        name = self.todo.name
         if name:
             print colored(name, "cyan")
 
     def with_todo_name(func):
         """
-        Decorator, print todo's name before func()
+        Decorator, print todo's name before func(), with "---"
         """
         def __decorator(self, *args, **kwargs):
             self.print_todo_name()
+            print colored("-" * len(self.todo.name), "cyan")
             return func(self, *args, **kwargs)
         return __decorator
+
+    @write_to_txt
+    def set_todo_name(self, new_name):
+        """
+        Set todo's name
+        """
+        self.todo.name = new_name
 
     @with_todo_name
     def ls_tasks(self):
@@ -382,11 +397,11 @@ class App(object):
             }
         }
 
-        log.info("Pushing %s to https://gist.github.com/%s .." % (name, gist_id))
+        log.info("Pushing '%s' to https://gist.github.com/%s .." % (name, gist_id))
         edit_ok = github.edit_gist(gist_id, files=files)
 
         if edit_ok:
-            log.ok("Pushed to file '" + name + "' at https://gist.github.com/" + gist_id)
+            log.ok("Pushed success.")
         else:
             log.error("Pushed failed.")
 
@@ -408,7 +423,7 @@ class App(object):
             log.error("Failed to pull gist.")
 
         if name not in dct["files"]:
-            log.error("File " + name + "not in gist: " + gist_id )
+            log.error("File '%s' not in gist: %s" % (name, gist_id))
 
         url = dct["files"][name]["raw_url"]
 
@@ -417,8 +432,24 @@ class App(object):
         if response.status_code == 200:
             print response.text
         else:
-            log.error("Failed to pull file from url " + url)
+            log.error("Failed to pull file from %s" % url)
 
+    def set_gist_id(self, new_gist_id):
+        """
+        set gist_id
+        """
+        gist_id = GistId()
+        gist_id.set(new_gist_id)
+        gist_id.save()
+
+    def get_gist_id(self):
+        """
+        print gist_id to user
+        """
+        gist_id = GistId()
+        gist_id.read()
+        if not gist_id.is_empty:
+            print gist_id.content
 
     def run(self):
         """
@@ -428,10 +459,20 @@ class App(object):
 
         if args["clear"]:
             self.clear_tasks()
+        elif args["name"]:
+            if args["<new_name>"]:
+                self.set_todo_name(args["<new_name>"])
+            else:
+                self.print_todo_name()
+        elif args["pull"]:
+            self.pull(args["<name>"])
         elif args["push"]:
             self.push()
-        elif args["pull"]:
-            self.pull()
+        elif args["gist_id"]:
+            if args["<new_gist_id>"]:
+                self.set_gist_id(args["<new_gist_id>"])
+            else:
+                self.get_gist_id()
         elif args["<id>"]:
             try:
                 task_id = int(args["<id>"])
