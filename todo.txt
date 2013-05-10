@@ -13,3 +13,4 @@ newname
 12. [x] tell user why he or she cant login to github.com or cant edit the gist
 13.     is there any good way to not try except the connectionerror,just raise it?
 14.     review the codes
+15.     Bug Pull's filename is unicode
