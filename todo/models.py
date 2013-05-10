@@ -116,8 +116,8 @@ class Github(object):
     # The client_secret can be reset. Also, this application matsers nothing.
     # Thanks.
 
-    client_id = "164f614c7c92c7a8c6bd"
-    client_secret = "d37ce92277ac9c2e6b90c81039f068ea9bb765c2"
+    client_id = "141eec25d89ad52c380b"
+    client_secret = "5bf0c8d82a753e4efbdf045400989f8fa93843d8"
     note_url = "https://github.com/secreek/todo"
     note = "Cli todo tool with readable storage."
     scopes = ["user", "gist"]

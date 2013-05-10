@@ -59,7 +59,7 @@ class Log(object):
         """
         Warning message.
         """
-        print colored("[warning]\t" + message, "yello")
+        print colored("[warning]\t" + message, "yellow")
 
 ask_input = AskInput()  # build ask_input for loop asks..
 log = Log()

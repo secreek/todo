@@ -33,7 +33,7 @@ You can edit the todo.txt directly.
 
 """
 
-__version__ = "0.1.5"
+__version__ = "0.2.0"
 
 from models import Task
 from models import Todo
