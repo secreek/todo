@@ -375,7 +375,7 @@ class App(object):
             GithubToken().save('')  # empty the token!
             self.push()  # and repush
         else:
-            log.error("Pushed failed.")
+            log.error("Pushed failed, server responded with status code: %s" % response.status_code )
 
     def pull(self, name=None):
         """
@@ -398,10 +398,14 @@ class App(object):
 
         dct = resp.json()  # get out the data
 
-        if name not in dct["files"]:
+        u_name = name.decode("utf8")  # decode to unicode
+
+        # Note that data back from github.com is unicode
+        if u_name not in dct["files"]:
             log.error("File '%s' not in gist: %s" % (name, gist_id))
 
-        url = dct["files"][name]["raw_url"]
+        u_url = dct["files"][u_name]["raw_url"]
+        url = u_url.encode("utf8")
 
         response = requests.get(url)
 
