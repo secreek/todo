@@ -1,6 +1,8 @@
 todo
 ----
 
+**Note**: It is not stable until version 1.0 released. The syntax for `todo.txt` and the usage of application may be updated.
+
 Cli todo tool with readable storage.
 
 
