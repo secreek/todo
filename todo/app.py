@@ -50,6 +50,7 @@ __version__ = '0.3.0'
 
 from models import Task
 from models import Todo
+from models import Github
 
 from parser import parser
 from generator import generator
@@ -59,6 +60,7 @@ from utils import colored
 from utils import ask_input
 
 import os
+import requests
 from docopt import docopt
 
 
@@ -108,6 +110,139 @@ class TodoTxt(File):
         super(TodoTxt, self).__init__(path)
 
 
+class Gist(File):
+    """
+    Parent class for GistId and GithubToken
+
+    attributes
+      todo_dir      str     the path of directory ".todo"
+      content       str     the content of the file
+      path          str     the path of the file
+
+    methods
+      read          read from file(gist_id or token) and return its content
+      save          save the content to file(..)
+
+    """
+
+    def __init__(self):
+        self.todo_dir = os.path.join(self.home, ".todo")
+        # mkdir ~/.todo if not exists
+        if not os.path.exists(self.todo_dir):
+            os.mkdir(self.todo_dir)
+        self.content = None
+        super(Gist, self).__init__(None)
+
+    def read(self):
+        """
+        return file's content
+        """
+        if os.path.exists(self.path):
+            self.content = super(Gist, self).read()
+            return self.content
+        return None
+
+    def save(self, content):
+        """
+        save the content to file
+        """
+        self.content = content
+        super(Gist, self).write(self.content)
+        log.info("%s stored in %s" % (self.name, self.path))
+
+    @property
+    def is_empty(self):
+        """
+        If the content is empty, return True, else False
+        """
+        return not self.content
+
+
+class GithubToken(Gist):
+    """
+      Github's access_token object.
+
+      attributes
+        path          str     its filepath in the os
+
+      methods
+        get           Get a token anyway.
+    """
+
+    def __init__(self):
+        super(GithubToken, self).__init__()
+        self.name = "github_token"
+        self.path = os.path.join(self.todo_dir, self.name)
+        self.read()  # must read after know his path
+
+    def get(self):
+        """
+          call this method to get a token::
+
+            token = GithubToken().get()
+
+          what the get() does:
+            1) read from "~/.todo/token"
+            2) check if the token read is empty.
+               (yes)-> 1) if empty,
+                          ask user for user&passwd to access api.github.com
+                        2) fetch the token, set to this instance and store it.
+            3) return the token (a string)
+        """
+        if self.is_empty:
+            user = ask_input.text("Github user:")
+            password = ask_input.password("Password for %s:" % user)
+
+            log.info("Authorize to github.com..")
+            response = Github().authorize(user, password)
+
+            if response.status_code == 201:
+                # 201 created
+                log.ok("Authorized success.")
+                # get token from dict
+                token = response.json()["token"]
+                self.save(token)
+            else:
+                log.error("Failed to authorize. status code: %s" % str(response.status_code))
+        return self.content
+
+
+class GistId(Gist):
+    """
+      Gist id object.
+
+      attributes
+        name      str
+        path      str     the path of ".todo/gist_id" in the os
+
+      methods
+        get           get a gist_id anyway.
+    """
+
+    def __init__(self):
+        super(GistId, self).__init__()
+        self.name = "gist_id"
+        self.path = os.path.join(self.todo_dir, self.name)
+        self.read()  # must read after know his path
+
+    def get(self):
+        """
+        call this method to get a gist_id::
+            gist_id = GistId().get()
+        what the get() dose:
+          1) read the gist_id from file "~/.todo/gist_id"
+          2) check if the gist_id if empty
+             (yes)-> 1) if the gist_id is empty, ask user to input it.
+                     2) save the new gist_id
+          3) return the gist_id
+        """
+
+        if self.is_empty:
+            self.save(ask_input.text("Gist id:"))
+        return self.content
+
+
+
 class App(object):
     """
       Todo command line application.
@@ -147,7 +282,7 @@ class App(object):
         return wrapped_task
 
     def wrap_todo_name(self, underline=False):
-        """Wrap todo's name"""
+        """wrap todo's name"""
         name = self.todo.name
         if name:
             wrapped_name = colored(name, 'orange')
@@ -216,6 +351,88 @@ class App(object):
         """clear all tasks"""
         self.todo.tasks = []
 
+    def push(self):
+        """Push todo to gist.github.com"""
+        github = Github()
+        gist_id = GistId().get()
+        token = GithubToken().get()
+
+        github.login(token)
+
+        if not self.todo.name:
+            name = "Todo"
+        else:
+            name = self.todo.name
+
+        files = {
+            name: {
+                "content": self.todo_content
+            }
+        }
+
+        log.info(
+            "Pushing '%s' to https://gist.github.com/%s .." % (name, gist_id)
+        )
+        response = github.edit_gist(gist_id, files=files)
+
+        if response.status_code == 200:
+            log.ok("Pushed success.")
+        elif response.status_code == 401:
+            log.warning("Github token is out of date")
+            GithubToken().save('')  # empty the token!
+            self.push()  # and repush
+        else:
+            log.error("Pushed failed, server responded with status code: %s" % response.status_code )
+
+    def pull(self, name=None):
+        """Pull todo from remote gist server"""
+
+        if not name:  # if not name figured out
+            if self.todo.name:
+                name = self.todo.name  # use the todo.txt's name
+            else:
+                log.error("Please tell me todo's name to pull.")
+
+        github = Github()
+        gist_id = GistId().get()
+
+        resp = github.get_gist(gist_id)
+
+        if resp.status_code != 200:
+            log.error("Failed to pull gist, status code: %s" % resp.status_code)
+
+        dct = resp.json()  # get out the data
+
+        u_name = name.decode("utf8")  # decode to unicode
+
+        # Note that data back from github.com is unicode
+        if u_name not in dct["files"]:
+            log.error("File '%s' not in gist: %s" % (name, gist_id))
+
+        u_url = dct["files"][u_name]["raw_url"]
+        url = u_url.encode("utf8")
+
+        response = requests.get(url)
+
+        if response.status_code == 200:
+            todo_content = response.text.encode("utf8")
+            self.todo_txt.write(todo_content)
+            log.ok("Pulled success to file '%s'" % self.todo_txt.path)
+        else:
+            log.error("Failed to pull file from %s" % url)
+
+    def set_gist_id(self, new_gist_id):
+        """set gist_id"""
+        gist_id = GistId()
+        gist_id.save(new_gist_id.strip())
+
+    def get_gist_id(self):
+        """print gist_id to user"""
+        gist_id = GistId()
+
+        if not gist_id.is_empty:
+            print gist_id.content
+
     def run(self):
 
         args = docopt(__doc__, version="todo version: " + __version__)
@@ -231,6 +448,15 @@ class App(object):
             self.ls_tasks(
                 header=False, filter=lambda task: args["<str>"] in task.content
             )
+        elif args["pull"]:
+            self.pull(args["<name>"])
+        elif args["push"]:
+            self.push()
+        elif args["gist_id"]:
+            if args["<new_gist_id>"]:
+                self.set_gist_id(args["<new_gist_id>"])
+            else:
+                self.get_gist_id()
         elif args["<id>"]:
             try:
                 task_id = int(args["<id>"])
