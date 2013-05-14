@@ -145,3 +145,25 @@ class Github(object):
              print r.text
         """
         return self.session.get("https://api.github.com/gists/" + gist_id)
+
+    def create_gist(self, files, public=False, description=""):
+        """
+          Create a new gist.
+
+          ::
+              create_gist(files, public=False, description="xxxx")  # return response
+
+          The files is a dict, {filename: {"content": content}}
+
+          201 code for success created.
+
+        """
+        data = dict(
+            files=files,
+            public=public,
+            description=description
+        )
+
+        response = self.session.post("https://api.github.com/gists", data=json.dumps(data))
+
+        return response

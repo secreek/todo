@@ -47,7 +47,7 @@ To feedback, please visit https://github.com/secreek/todo
 
 """
 
-__version__ = '0.3.0'
+__version__ = '0.3.1'
 
 from models import Task
 from models import Todo
@@ -61,6 +61,7 @@ from utils import colored
 from utils import ask_input
 
 import os
+import sys
 import requests
 from docopt import docopt
 
@@ -204,7 +205,7 @@ class GithubToken(Gist):
                 token = response.json()["token"]
                 self.save(token)
             else:
-                log.error("Failed to authorize. status code: %s" % str(response.status_code))
+                log.error("Authorization failed. %d" % response.status_code)
         return self.content
 
 
@@ -233,15 +234,51 @@ class GistId(Gist):
         what the get() dose:
           1) read the gist_id from file "~/.todo/gist_id"
           2) check if the gist_id if empty
-             (yes)-> 1) if the gist_id is empty, ask user to input it.
+             (yes)-> 1) if the gist_id is empty, ask user to input it or
+                     new a gist directly.
                      2) save the new gist_id
           3) return the gist_id
         """
 
         if self.is_empty:
-            self.save(ask_input.text("Gist id:"))
-        return self.content
+            print "Tell me the gist's id you want to push to:"
+            print " 1. New a gist right now."
+            print " 2. Let me input a gist's id."
+            answer = ask_input.text("Input your answer(1/2):")
+            if answer == '2':
+                self.save(ask_input.text("Gist id:"))
+            elif answer == '1':
+                # new a gist
+                todo_content = TodoTxt().read()
+                todo = parser.parse(todo_content)
+                if not todo.name:
+                    name = "Todo"
+                else:
+                    name = todo.name
 
+                files = {
+                    name: {
+                        "content": todo_content
+                    }
+                }
+
+                github = Github()
+                token = GithubToken().get()
+                github.login(token)  # need to login
+                log.info("Create a new gist..")
+                resp = github.create_gist(files=files, description="Todo")
+
+                if resp.status_code == 201:
+                    dct = resp.json()
+                    log.ok("Create success:%s ,"
+                           "pushed at file '%s'" % (dct["html_url"], name))
+                    self.save(dct["id"])
+                    sys.exit()
+                else:
+                    log.error("Create gist failed. %d", resp.status_code)
+            else:  # exit if else input
+                log.error("Invalid answer.")
+        return self.content
 
 
 class App(object):
@@ -379,11 +416,11 @@ class App(object):
         if response.status_code == 200:
             log.ok("Pushed success.")
         elif response.status_code == 401:
-            log.warning("Github token is out of date")
+            log.warning("Github token out of date.")
             GithubToken().save('')  # empty the token!
             self.push()  # and repush
         else:
-            log.error("Pushed failed, server responded with status code: %s" % response.status_code )
+            log.error("Pushed failed. %d" % response.status_code)
 
     def pull(self, name=None):
         """Pull todo from remote gist server"""
@@ -400,7 +437,7 @@ class App(object):
         resp = github.get_gist(gist_id)
 
         if resp.status_code != 200:
-            log.error("Failed to pull gist, status code: %s" % resp.status_code)
+            log.error("Pull failed.%d" % resp.status_code)
 
         dct = resp.json()  # get out the data
 

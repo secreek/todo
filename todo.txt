@@ -11,9 +11,10 @@ secreek.todo
 - [x] loop ask user for pass and usernname and gist_id
 - [x] add cli to set gist_id
 - [x] tell user why he or she cant login to github.com or cant edit the gist
--     is there any good way to not try except the connectionerror,just raise it?
+- [x] is there any good way to not try except the connectionerror,just raise it?
 -     review the codes
 - [x] Bug Pull's filename is unicode
 -     Add shell prompt ability to test what the todo_txt is now
 -     Remove the cli 'clear'
 -     Add slice support
+-     search 12 done
