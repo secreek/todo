@@ -16,9 +16,9 @@ latest version: [v0.3.1](https://github.com/secreek/todo/tree/v0.3.1)
 
 offline version(No `gist` support): [v0.1.4](https://github.com/secreek/todo/tree/v0.1.4)
 
-Use pip to install it from github.com:
+Use pip to install it from github.com, branc master is always stable:
 
-    [sudo] pip install git+git://github.com/secreek/todo.git@v0.3.1
+    [sudo] pip install git+git://github.com/secreek/todo.git@master
 
 Usage
 ------

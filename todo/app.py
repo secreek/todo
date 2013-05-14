@@ -227,7 +227,7 @@ class GistId(Gist):
         self.path = os.path.join(self.todo_dir, self.name)
         self.read()  # must read after know his path
 
-    def get(self):
+    def get(self, answer=None):  # add answer to figure which approach to go
         """
         call this method to get a gist_id::
             gist_id = GistId().get()
@@ -244,7 +244,8 @@ class GistId(Gist):
             print "Tell me the gist's id you want to push to:"
             print " 1. New a gist right now."
             print " 2. Let me input a gist's id."
-            answer = ask_input.text("Input your answer(1/2):")
+            if answer is None:
+                answer = ask_input.text("Input your answer(1/2):")
             if answer == '2':
                 self.save(ask_input.text("Gist id:"))
             elif answer == '1':
@@ -262,6 +263,8 @@ class GistId(Gist):
                     }
                 }
 
+                resp = None
+
                 github = Github()
                 token = GithubToken().get()
                 github.login(token)  # need to login
@@ -270,10 +273,16 @@ class GistId(Gist):
 
                 if resp.status_code == 201:
                     dct = resp.json()
+                    html_url = dct["html_url"].encode("utf8")
                     log.ok("Create success:%s ,"
-                           "pushed at file '%s'" % (dct["html_url"], name))
+                           "pushed at file '%s'" % (html_url, name))
                     self.save(dct["id"])
                     sys.exit()
+                elif resp.status_code == 401:
+                    log.warning("Github access denied, empty the old token")
+                    GithubToken().save('')  # empty the token!
+                    # and re create
+                    self.get(answer='1')
                 else:
                     log.error("Create gist failed. %d" % resp.status_code)
             else:  # exit if else input
@@ -416,7 +425,7 @@ class App(object):
         if response.status_code == 200:
             log.ok("Pushed success.")
         elif response.status_code == 401:
-            log.warning("Github token out of date.")
+            log.warning("Github token out of date, empty the old token")
             GithubToken().save('')  # empty the token!
             self.push()  # and repush
         else:

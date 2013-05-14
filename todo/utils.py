@@ -90,7 +90,7 @@ class Log(object):
 
     def warning(self, message):
         """Warning message"""
-        print colored("[warning]\t" + message, "yellow")
+        print colored("[warn]\t" + message, "yellow")
 
 
 log = Log()

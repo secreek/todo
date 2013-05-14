@@ -17,4 +17,3 @@ secreek.todo
 -     Add shell prompt ability to test what the todo_txt is now
 -     Remove the cli 'clear'
 -     Add slice support
--     search 12 done
