@@ -1,13 +1,25 @@
 # coding=utf8
+# _____      _________
+# __  /____________  /_____
+# _  __/  __ \  __  /_  __ \
+# / /_ / /_/ / /_/ / / /_/ /
+# \__/ \____/\__,_/  \____/
+#
+# Todo application in the command line, with readable storage.
+# Authors: https://github.com/secreek
+# Home: https://github.com/secreek/todo
+# Email: nz2324@126.com
+# License: MIT
 
 """
 Usage:
   todo [-h|-v|-a]
   todo clear
+  todo name [<new_name>]
+  todo search <str>
+  todo gist_id [<new_gist_id>]
   todo push
   todo pull [<name>]
-  todo name [<new_name>]
-  todo gist_id [<new_gist_id>]
   todo (<id> [done|undone|remove])|<task>...
 
 Options:
@@ -21,6 +33,7 @@ Examples:
   Check a task as undone        todo 1 undne
   Print all tasks               todo --all
   Print undone tasks            todo
+  Search a task by content      todo search 'some str'
   Remove a task                 todo 1 remove
   Rename the todo               todo name <a-new-name>
   Get the name of todo          todo name
@@ -28,70 +41,77 @@ Examples:
   Pull todo from gist           todo pull my_todo
   Set gist's id                 todo gist_id xxxxx
   Get gist's id                 todo gist_id
-
 You can edit the todo.txt directly.
+
+To feedback, please visit https://github.com/secreek/todo
 
 """
 
-__version__ = "0.2.1"
+__version__ = '0.3.0'
 
 from models import Task
 from models import Todo
-from models import TaskNotFound
 from models import Github
+
 from parser import parser
 from generator import generator
+
 from utils import log
+from utils import colored
 from utils import ask_input
 
-from os import mkdir
-from os.path import join
-from os.path import exists
-from os.path import expanduser
-
+import os
 import requests
-from termcolor import colored
 from docopt import docopt
 
-home = expanduser("~")  # "/home/username/"
 
+class File(object):
+    """File object to manage io with disk"""
 
-class TodoTxt(object):
-    """
-    Object to manage todo.txt.
+    home = os.path.expanduser("~")
 
-    attributes
-      path      str     todo.txt's filepath
-    """
-
-    def __init__(self):
-        """
-        Use './todo.txt' prior to '~/todo.txt' for persistent storage.
-        """
-        fn = "todo.txt"
-
-        if exists(fn):
-            self.path = fn
-        else:
-            home_todo_txt = join(home, fn)
-            open(home_todo_txt, "a").close()  # touch it if not exists
-            self.path = home_todo_txt
+    def __init__(self, path):
+        self.path = path
 
     def read(self):
-        """
-        Read todo.txt's content.
-        """
-
+        """Read from file return the content"""
         return open(self.path).read().strip()
 
     def write(self, content):
-        """
-        Write string to todo.txt
-        """
-        return open(self.path, "w").write(content)
+        """Write string to this file"""
+        return open(self.path, 'w').write(content.strip())
 
 
-class Gist(object):
+class TodoTxt(File):
+    """
+      Object to manage todo.txt's IO.
+
+      attributes
+        path    str     todo.txt's filepath
+      methods
+        read    read from todo.txt, return str
+        write   write str to todo.txt
+    """
+
+    def __init__(self):
+        """ Use './todo.txt' prior to '~/todo.txt' for persistent storage."""
+
+        filename = "todo.txt"
+
+        current_path = os.path.join(".", filename)
+        home_path = os.path.join(self.home, filename)
+
+        if os.path.exists(current_path):
+            path = current_path
+        else:
+            # touch the '~/todo.txt' if it not exists
+            open(home_todo_txt, "a").close()
+            path = home_path
+
+        super(TodoTxt, self).__init__(path)
+
+
+class Gist(File):
     """
     Parent class for GistId and GithubToken
 
@@ -107,19 +127,19 @@ class Gist(object):
     """
 
     def __init__(self):
-        self.todo_dir = join(home, ".todo")
-        self.content = None
-        self.path = None
+        self.todo_dir = os.path.join(self.home, ".todo")
         # mkdir ~/.todo if not exists
-        if not exists(self.todo_dir):
-            mkdir(self.todo_dir)
+        if not os.path.exists(self.todo_dir):
+            os.mkdir(self.todo_dir)
+        self.content = None
+        super(Gist, self).__init__(None)
 
     def read(self):
         """
         return file's content
         """
-        if exists(self.path):
-            self.content = open(self.path).read().strip()
+        if os.path.exists(self.path):
+            self.content = super(Gist, self).read()
             return self.content
         return None
 
@@ -128,7 +148,7 @@ class Gist(object):
         save the content to file
         """
         self.content = content
-        open(self.path, "w").write(self.content.strip())
+        super(Gist, self).write(self.content)
         log.info("%s stored in %s" % (self.name, self.path))
 
     @property
@@ -141,33 +161,34 @@ class Gist(object):
 
 class GithubToken(Gist):
     """
-    Github's access_token object.
+      Github's access_token object.
 
-    attributes
-      path          str     its filepath in the os
+      attributes
+        path          str     its filepath in the os
 
-    methods
-      get           Get a token anyway.
+      methods
+        get           Get a token anyway.
     """
 
     def __init__(self):
         super(GithubToken, self).__init__()
         self.name = "github_token"
-        self.path = join(self.todo_dir, self.name)
+        self.path = os.path.join(self.todo_dir, self.name)
         self.read()  # must read after know his path
 
     def get(self):
         """
-        call this method to get a token::
-          token = GithubToken().get()
+          call this method to get a token::
 
-        what the get() does:
-          1) read from "~/.todo/token"
-          2) check if the token read is empty.
-             (yes)-> 1) if empty,
-                        ask user for user&passwd to access api.github.com
-                      2) fetch the token, set to this instance and store it.
-          3) return the token (a string)
+            token = GithubToken().get()
+
+          what the get() does:
+            1) read from "~/.todo/token"
+            2) check if the token read is empty.
+               (yes)-> 1) if empty,
+                          ask user for user&passwd to access api.github.com
+                        2) fetch the token, set to this instance and store it.
+            3) return the token (a string)
         """
         if self.is_empty:
             user = ask_input.text("Github user:")
@@ -189,20 +210,20 @@ class GithubToken(Gist):
 
 class GistId(Gist):
     """
-    Gist id object.
+      Gist id object.
 
-    attributes
-      name      str
-      path      str     the path of ".todo/gist_id" in the os
+      attributes
+        name      str
+        path      str     the path of ".todo/gist_id" in the os
 
-    methods
-      get           get a gist_id anyway.
+      methods
+        get           get a gist_id anyway.
     """
 
     def __init__(self):
         super(GistId, self).__init__()
         self.name = "gist_id"
-        self.path = join(self.todo_dir, self.name)
+        self.path = os.path.join(self.todo_dir, self.name)
         self.read()  # must read after know his path
 
     def get(self):
@@ -222,130 +243,117 @@ class GistId(Gist):
         return self.content
 
 
+
 class App(object):
     """
-    Todo command line application.
+      Todo command line application.
+      ::
 
-    ::
-        app = App()
-        app.run()
+          app = App()
+          app.run()
+
     """
+
     def __init__(self):
-        self.todo_txt = TodoTxt()
-        self.txt_content = self.todo_txt.read()
-        self.todo = parser.parse(self.txt_content)
+        self.todo_txt = t = TodoTxt()  # <TodoTxt instance>
+        self.todo_content = c = t.read()  # todo.txt's content
+        self.todo = parser.parse(c)  # <Todo instance>
 
-    def write_to_txt(func):
+    def generate_to_txt(func):
         """
-        Decorator, write to todo.txt after func
+          Decorator, generate <Todo instance> to str, and then
+        save to todo.txt.
         """
-        def __decorator(self, *args, **kwargs):
+        def wrapper(self, *args, **kwargs):
             func(self, *args, **kwargs)
-            content = generator.generate(self.todo)
-            self.todo_txt.write(content)
-        return __decorator
+            self.todo_txt.write(generator.generate(self.todo))
+        return wrapper
 
-    def print_task(self, task):
-        """
-        Print single task to terminal.
-        """
+    def wrap_task(self, task, index=None):
+        """wrap task to colored str"""
         if task.done:
-            state = colored("✓", "green")
+            state = colored('✓', 'green')
         else:
-            state = colored("✖", "red")
-        content = colored(task.content, "blue")
-        task_id = colored(str(task.id), "cyan")
-        print task_id + "." + " " + state + "  " + content
+            state = colored('✖', "red")
 
-    def print_task_by_id(self, task_id):
-        """
-        Pringt single task by its id.
-        """
-        self.print_task(self.todo.get_task(task_id))
+        content = colored(task.content, "gray")
+        wrapped_task = state + "  " + content
+        if index:
+            wrapped_task = colored(str(index)+'.', 'gray') + ' ' + wrapped_task
+        return wrapped_task
+
+    def wrap_todo_name(self, underline=False):
+        """wrap todo's name"""
+        name = self.todo.name
+        if name:
+            wrapped_name = colored(name, 'orange')
+            if underline:
+                wrapped_name += '\n' + colored(len(name) * '-', 'gray')
+            return wrapped_name
+        return None
+
+    def ls_tasks(self, header=True, filter=lambda task: 1):
+        """ls tasks by filter. The filter's default: lambda task:1"""
+
+        tasks = self.todo.tasks
+
+        wrapped_name = self.wrap_todo_name(underline=True)
+
+        if header and wrapped_name:
+            print wrapped_name
+
+        for index, task in enumerate(tasks, 1):
+            if filter(task):
+                print self.wrap_task(task, index)
 
     def print_todo_name(self):
-        """
-        Print todo's name, without "----"
-        """
-        if self.todo.name:
-            print colored(self.todo.name, "cyan")
+        """print todo's name to screen"""
+        name = self.wrap_todo_name()
+        if name:
+            print name
 
-    def with_todo_name(func):
-        """
-        Decorator, print todo's name before func(), with "---"
-        """
-        def __decorator(self, *args, **kwargs):
-            self.print_todo_name()
-            if self.todo.name:
-                print colored("-" * len(self.todo.name), "cyan")
-            return func(self, *args, **kwargs)
-        return __decorator
-
-    @write_to_txt
+    @generate_to_txt
     def set_todo_name(self, new_name):
-        """
-        Set todo's name
-        """
+        """set todo's name a new one"""
         self.todo.name = new_name
 
-    @with_todo_name
-    def ls_tasks(self):
-        """
-        ls all tasks output to screen
-        """
-        for task in self.todo.tasks:
-            self.print_task(task)
+    def get_task_by_id(self, index):
+        """return task object by its index, if not found, fatal error."""
+        index -= 1
+        tasks = self.todo.tasks
+        if index >= len(tasks):
+            log.error("Task not found.")
+        return tasks[index]
 
-    @with_todo_name
-    def ls_undone_tasks(self):
-        """
-        ls all undone tasks.
-        """
-        for task in self.todo.tasks:
-            if not task.done:
-                self.print_task(task)
+    def print_task(self, index):
+        """Print wrapped task to term by its id"""
+        task = self.get_task_by_id(index)
+        print self.wrap_task(task, index)
 
-    @write_to_txt
-    def check_task(self, task_id):
-        """
-        check one task to done.
-        """
-        task = self.todo.get_task(task_id)
-        task.done = True
+    @generate_to_txt
+    def check_task(self, index, is_done=True):
+        """check a task to done or undone"""
+        task = self.get_task_by_id(index)
+        task.done = True if is_done else False
 
-    @write_to_txt
-    def undo_task(self, task_id):
-        """
-        check one task to undone.
-        """
-        task = self.todo.get_task(task_id)
-        task.done = False
+    @generate_to_txt
+    def remove_task(self, index):
+        """remove a task from list"""
+        task = self.get_task_by_id(index)
+        self.todo.tasks.remove(task)
 
-    @write_to_txt
-    def clear_tasks(self):
-        """
-        Clear all tasks.
-        """
-        self.todo.clear()
-
-    @write_to_txt
+    @generate_to_txt
     def add_task(self, content):
-        """
-        Add a new task
-        """
-        self.todo.new_task(content)
+        """add a new task"""
+        self.todo.tasks.append(Task(content))
 
-    @write_to_txt
-    def remove_task(self, task_id):
-        """
-        Remove task from list
-        """
-        self.todo.remove_task(task_id)
+    @generate_to_txt
+    def clear_tasks(self):
+        """clear all tasks"""
+        self.todo.tasks = []
 
     def push(self):
-        """
-        Push todo to gist.github.com
-        """
+        """Push todo to gist.github.com"""
         github = Github()
         gist_id = GistId().get()
         token = GithubToken().get()
@@ -353,13 +361,13 @@ class App(object):
         github.login(token)
 
         if not self.todo.name:
-            name = "NoName"
+            name = "Todo"
         else:
             name = self.todo.name
 
         files = {
             name: {
-                "content": self.txt_content
+                "content": self.todo_content
             }
         }
 
@@ -378,9 +386,7 @@ class App(object):
             log.error("Pushed failed, server responded with status code: %s" % response.status_code )
 
     def pull(self, name=None):
-        """
-        Pull todo from remote gist server.
-        """
+        """Pull todo from remote gist server"""
 
         if not name:  # if not name figured out
             if self.todo.name:
@@ -417,25 +423,19 @@ class App(object):
             log.error("Failed to pull file from %s" % url)
 
     def set_gist_id(self, new_gist_id):
-        """
-        set gist_id
-        """
+        """set gist_id"""
         gist_id = GistId()
         gist_id.save(new_gist_id.strip())
 
     def get_gist_id(self):
-        """
-        print gist_id to user
-        """
+        """print gist_id to user"""
         gist_id = GistId()
 
         if not gist_id.is_empty:
             print gist_id.content
 
     def run(self):
-        """
-        Get arguments from cli and run!
-        """
+
         args = docopt(__doc__, version="todo version: " + __version__)
 
         if args["clear"]:
@@ -445,6 +445,10 @@ class App(object):
                 self.set_todo_name(args["<new_name>"])
             else:
                 self.print_todo_name()
+        elif args["search"]:
+            self.ls_tasks(
+                header=False, filter=lambda task: args["<str>"] in task.content
+            )
         elif args["pull"]:
             self.pull(args["<name>"])
         elif args["push"]:
@@ -457,32 +461,29 @@ class App(object):
         elif args["<id>"]:
             try:
                 task_id = int(args["<id>"])
+            except ValueError:
+                # not an integer, add as a task
+                self.add_task(args["<id>"])
+            else:
                 if args["done"]:
-                    self.check_task(task_id)
+                    self.check_task(task_id, True)
                 elif args["undone"]:
-                    self.undo_task(task_id)
+                    self.check_task(task_id, False)
                 elif args["remove"]:
                     self.remove_task(task_id)
                 else:
-                    self.print_task_by_id(task_id)
-            except ValueError:
-                # if not an integer format str, use as a task
-                self.add_task(args["<id>"])
-            except TaskNotFound:
-                log.error("No task at id '" + str(task_id) + "'.")
+                    self.print_task(task_id)
         elif args["<task>"]:
             self.add_task(" ".join(args["<task>"]))
         elif args["--all"]:
             self.ls_tasks()
         else:
-            self.ls_undone_tasks()
+            self.ls_tasks(filter=lambda task: not task.done)
 
 
 def main():
-    """
-    Run app.
-    """
     App().run()
+
 
 if __name__ == '__main__':
     main()

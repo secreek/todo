@@ -1,0 +1,9 @@
+v0.3.0
+------
+
+- Remove task's id in todo.txt
+- Add feature: search 
+
+v0.2.1
+--------
+- push and pull feature

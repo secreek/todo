@@ -1,7 +1,21 @@
 # coding=utf8
+# _____      _________
+# __  /____________  /_____
+# _  __/  __ \  __  /_  __ \
+# / /_ / /_/ / /_/ / / /_/ /
+# \__/ \____/\__,_/  \____/
+#
+# Todo application in the command line, with readable storage.
+# Authors: https://github.com/secreek
+# Home: https://github.com/secreek/todo
+# Email: nz2324@126.com
+# License: MIT
+
 
 """
-Generator from todo object to todo format string
+  Generator from <Todo instance> to string::
+
+      generator.generate(<Todo instance>)  # return str
 """
 
 from models import Task
@@ -10,67 +24,50 @@ from models import Todo
 
 class Generator(object):
     """
-    Generator from todo object to readable string.
+      Generator from <Todo instance> to string.
     """
 
-    newline = "\n"
+    newline = '\n'
 
-    def gen_task_id(self, task_id):
+    def generate_task(self, task):
         """
-        int => str      e.g.  12 => '12.'
-        """
-        return str(task_id) + "."
+          <Task> => <str>
+          e.g.::
 
-    def gen_task_done(self, done):
-        """
-        boolen => str   e.g.  True => '[x]'
-        """
-        if done is True:
-            return '[x]'
-        else:
-            return '   '
+              Task('Go shopping', True)
 
-    def gen_task_content(self, content):
-        """
-        str => str
-        """
-        return content
+              =>
 
-    def gen_name(self, name):
-        """
-        str => str      e.g.  'name' => 'name\n------'
-        """
-        if name:
-            return name + self.newline +  '-' * len(name)
+              '- [x] Go shopping'
 
-    def gen_task(self, task):
         """
-        Task => str
-        e.g.    Task(1, "Write email", True) => '1. [x]  Write email'
+        done = '[x]' if task.done else '   '
+        content = task.content
+        return ' '.join(['-', done, content])
+
+    def generate_todo(self, todo):
         """
-        lst = []
-        lst.append(self.gen_task_id(task.id))
-        lst.append(self.gen_task_done(task.done))
-        lst.append(self.gen_task_content(task.content))
-        return " ".join(lst)
-
-    def generate(self, todo):
+          <Todo instance> => <str>
+          parameters
+            todo   the <Todo instance>
         """
-        Generate todo object to string.
+        lines = []
 
-        e.g.  Todo(name, tasks) => "1. (x) do something..."
-        """
-        lst = []
-
-        head = self.gen_name(todo.name)
-
-        if head:
-            lst.append(head)
+        if todo.name:
+            lines.append(todo.name)
+            name_len = len(todo.name)
+            if name_len < 3:
+                num = 3
+            else:
+                num = name_len
+            lines.append(num * '-')
 
         for task in todo.tasks:
-            lst.append(self.gen_task(task))
+            lines.append(self.generate_task(task))
 
-        return self.newline.join(lst)
+        return self.newline.join(lines)
 
+    # alias to generate_todo
+    generate = generate_todo
 
 generator = Generator()  # build generator

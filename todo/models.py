@@ -1,4 +1,19 @@
 # coding=utf8
+# _____      _________
+# __  /____________  /_____
+# _  __/  __ \  __  /_  __ \
+# / /_ / /_/ / /_/ / / /_/ /
+# \__/ \____/\__,_/  \____/
+#
+# Todo application in the command line, with readable storage.
+# Authors: https://github.com/secreek
+# Home: https://github.com/secreek/todo
+# Email: nz2324@126.com
+# License: MIT
+"""
+  Models in this application, Task and Todo,
+see theirs docs for help.
+"""
 
 import json
 import requests
@@ -6,92 +21,36 @@ import requests
 
 class Task(object):
     """
-    A task looks like
+      A task looks like::
 
-      1. [x]  Go shopping
+          - [x] Go shopping
 
-    if this task has been done, use '[x]' to mark it.
-    else, leave there blank.
+      Use '[x]' to mark a task done.
 
-    attributes
-      id        int
-      content   str
-      done      bool
+      attributes
+        content   str  (required)
+        done      bool (optional, default: False)
     """
 
-    def __init__(self, task_id, content, done=False):
-        self.id = task_id
+    def __init__(self, content, done=False):
         self.content = content
         self.done = done
 
 
-class TaskNotFound(Exception):
-    """
-    If the asked task not found in given todo, this error will be raised
-    """
-    pass
-
-
 class Todo(object):
     """
-    A todo is made up of tasks.
+      A todo is made up of tasks.
 
-    attributes
-      name    str     todo's name, should be unique in all your todos in your os.
-      tasks   list    tasks in this todo, each of them is an instance of Task
+      attributes
+        name    str     (optional, default: '')todo's name, should be unique
+      in all your todos in your os.
+        tasks   list    (optional, default: [])tasks in this todo, each of
+      them is an instance of Task
     """
 
-    def __init__(self, name="", tasks=[]):
-        # We set default value of argument 'name' as "",
-        # because the name is optional
-        self.name = name
-        self.tasks = tasks
-
-    def next_id(self):
-        """
-        Generate the next id should be.
-
-        For the id of one task is an integer, the id(s) of a todo object will be made up of
-        many integers. We find the max of them, and plus one to it as the next id for new task
-        """
-
-        ids = [task.id for task in self.tasks]
-        max_id = max(ids) if ids else 0  # method `max` broken with empty list
-        return (max_id + 1)
-
-    def new_task(self, content, done=False):
-        """
-        Append a new task to todo.
-
-        parameters:
-          content       the content of task
-          done          if the task done(default: False)
-        """
-        task = Task(self.next_id(), content, done)
-        return self.tasks.append(task)
-
-    def get_task(self, task_id):
-        """
-        Get task by its id
-        """
-        for task in self.tasks:
-            if task.id == task_id:
-                return task
-        # Not found
-        raise TaskNotFound
-
-    def remove_task(self, task_id):
-        """
-        Remove task by its id
-        """
-        task = self.get_task(task_id)
-        return self.tasks.remove(task)
-
-    def clear(self):
-        """
-        Clear tasks list!
-        """
-        self.tasks = []
+    def __init__(self, name=None, tasks=None):
+        self.name = '' if name is None else name
+        self.tasks = [] if tasks is None else tasks
 
 
 class Github(object):
@@ -124,14 +83,14 @@ class Github(object):
 
     def __init__(self):
         """
-        Init an instance of Github. New an empty session.
+          Init an instance of Github. New an empty session.
         """
         self.session = requests.Session()  # init a session
 
     def authorize(self, login, password):
         """
-        Fetch access_token from github.com using username & password.
-        return the response object
+          Fetch access_token from github.com using username & password.
+          return the response object
         """
         self.session.auth = (login, password)
         data = dict(
@@ -148,20 +107,20 @@ class Github(object):
 
     def login(self, token):
         """
-        Login to github with token
+          Login to github with token
         """
         self.session.headers.update({'Authorization': 'token ' + token})
 
     def edit_gist(self, gist_id, files={}, description=""):
         """
-        Edit a gist, require auth.
+          Edit a gist, require auth.
 
-        parameters
-          gist_id       str      gist's id
-          files         dict     {file_name:{"content":"xxxx", "filename":"xxxxx"}}
-          description   str      gist's description
+          parameters
+            gist_id       str      gist's id
+            files         dict     {file_name:{"content":"xxxx", "filename":"xxxxx"}}
+            description   str      gist's description
 
-        return response
+          return response
         """
         data = dict(
             files=files,
@@ -172,17 +131,17 @@ class Github(object):
 
     def get_gist(self, gist_id):
         """
-        Fetch a single gist down, return response.
+          Fetch a single gist down, return response.
 
-        ::
-            resp = get_gist("xxx")
-            dct = resp.json()
+          ::
+              resp = get_gist("xxx")
+              dct = resp.json()
 
-        To get some certain file's raw_url::
-            dct["files"]["filename"]["raw_url"]
+          To get some certain file's raw_url::
+              dct["files"]["filename"]["raw_url"]
 
-        To fetch content of gist's file::
-           r = requests.get(file_raw_url)
-           print r.text
+          To fetch content of gist's file::
+             r = requests.get(file_raw_url)
+             print r.text
         """
         return self.session.get("https://api.github.com/gists/" + gist_id)
