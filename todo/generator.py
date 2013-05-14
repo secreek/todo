@@ -55,7 +55,12 @@ class Generator(object):
 
         if todo.name:
             lines.append(todo.name)
-            lines.append(len(todo.name) * '-')
+            name_len = len(todo.name)
+            if name_len < 3:
+                num = 3
+            else:
+                num = name_len
+            lines.append(num * '-')
 
         for task in todo.tasks:
             lines.append(self.generate_task(task))

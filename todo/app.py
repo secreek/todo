@@ -161,12 +161,20 @@ class App(object):
 
         tasks = self.todo.tasks
 
-        if header:
-            print self.wrap_todo_name(underline=True)
+        wrapped_name = self.wrap_todo_name(underline=True)
+
+        if header and wrapped_name:
+            print wrapped_name
 
         for index, task in enumerate(tasks, 1):
             if filter(task):
                 print self.wrap_task(task, index)
+
+    def print_todo_name(self):
+        """print todo's name to screen"""
+        name = self.wrap_todo_name()
+        if name:
+            print name
 
     @generate_to_txt
     def set_todo_name(self, new_name):
@@ -218,7 +226,7 @@ class App(object):
             if args["<new_name>"]:
                 self.set_todo_name(args["<new_name>"])
             else:
-                print self.todo.name
+                self.print_todo_name()
         elif args["search"]:
             self.ls_tasks(
                 header=False, filter=lambda task: args["<str>"] in task.content
