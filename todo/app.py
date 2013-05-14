@@ -106,7 +106,7 @@ class TodoTxt(File):
             path = current_path
         else:
             # touch the '~/todo.txt' if it not exists
-            open(home_todo_txt, "a").close()
+            open(home_path, "a").close()
             path = home_path
 
         super(TodoTxt, self).__init__(path)
