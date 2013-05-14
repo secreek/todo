@@ -33,6 +33,7 @@ Examples:
   Check a task as undone        todo 1 undne
   Print all tasks               todo --all
   Print undone tasks            todo
+  Search a task by content      todo search 'some str'
   Remove a task                 todo 1 remove
   Rename the todo               todo name <a-new-name>
   Get the name of todo          todo name

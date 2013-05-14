@@ -12,13 +12,13 @@ Install
 -------
 
 
-latest version: [v0.2.1](https://github.com/secreek/todo/tree/v0.2.0)
+latest version: [v0.3.0](https://github.com/secreek/todo/tree/v0.2.0)
 
 offline version(No `gist` support): [v0.1.4](https://github.com/secreek/todo/tree/v0.1.4)
 
 Use pip to install it from github.com:
 
-    [sudo] pip install git+git://github.com/secreek/todo.git@v0.2.1
+    [sudo] pip install git+git://github.com/secreek/todo.git@v0.3.0
 
 Usage
 ------
@@ -27,10 +27,11 @@ Usage
 Usage:
   todo [-h|-v|-a]
   todo clear
+  todo name [<new_name>]
+  todo search <str>
+  todo gist_id [<new_gist_id>]
   todo push
   todo pull [<name>]
-  todo name [<new_name>]
-  todo gist_id [<new_gist_id>]
   todo (<id> [done|undone|remove])|<task>...
 
 Options:
@@ -44,6 +45,7 @@ Examples:
   Check a task as undone        todo 1 undne
   Print all tasks               todo --all
   Print undone tasks            todo
+  Search a task by content      todo search 'some str'
   Remove a task                 todo 1 remove
   Rename the todo               todo name <a-new-name>
   Get the name of todo          todo name
@@ -51,7 +53,6 @@ Examples:
   Pull todo from gist           todo pull my_todo
   Set gist's id                 todo gist_id xxxxx
   Get gist's id                 todo gist_id
-
 You can edit the todo.txt directly.
 ```
 
@@ -60,16 +61,20 @@ I just think to edit the `todo.txt` is the better way.
 Storage
 -------
 
-**Note** `todo` will always use `./todo.txt` prior to `~/todo.txt` for persistent storage.
+**Note** `todo` will **always** use `./todo.txt` prior to `~/todo.txt` for persistent storage.
+
+So when your are not in home directory, to new a todo, just:
+
+    touch todo.txt
 
 Well, the storage is readable, sample:
 
 ```
-1. [x] Clean the room
-2.     Go shopping.
+- [x] Clean the room
+-     Go shopping.
 ```
 
-Or checkout this file: [todo.txt](todo.txt)
+or checkout this file: [todo.txt](todo.txt)
 
 
 Remote storage
