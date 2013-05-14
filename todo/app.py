@@ -214,7 +214,7 @@ class App(object):
     @generate_to_txt
     def clear_tasks(self):
         """clear all tasks"""
-        self.tasks = []
+        self.todo.tasks = []
 
     def run(self):
 
@@ -237,7 +237,6 @@ class App(object):
             except ValueError:
                 # not an integer, add as a task
                 self.add_task(args["<id>"])
-                exit()
             else:
                 if args["done"]:
                     self.check_task(task_id, True)
