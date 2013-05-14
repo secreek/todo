@@ -275,7 +275,7 @@ class GistId(Gist):
                     self.save(dct["id"])
                     sys.exit()
                 else:
-                    log.error("Create gist failed. %d", resp.status_code)
+                    log.error("Create gist failed. %d" % resp.status_code)
             else:  # exit if else input
                 log.error("Invalid answer.")
         return self.content
