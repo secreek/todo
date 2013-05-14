@@ -29,7 +29,7 @@
     -     And another task
 
   As you see, the format of todo string is obvious and readable. The string
-above maps to a <Todo> instance, like a list.
+above maps to a <Todo> instance, like a list with a name.
 
 """
 
