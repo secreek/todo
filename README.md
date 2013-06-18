@@ -1,7 +1,7 @@
 todo
 ----
 
-**Note**: It is not stable until version 1.0 released. The syntax for `todo.txt` and the usage of application may be updated.
+**Note**: **This repo is no more updated. Please go to https://github.com/hit9/todo.c for todo in C version.**
 
 Cli todo tool with readable storage.
 
